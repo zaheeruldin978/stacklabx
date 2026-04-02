@@ -11,6 +11,12 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        // The New Elite Color Palette
+        stacklab: {
+          blue: "#0066FF",   // Deep Electric Blue
+          cyan: "#00E5FF",   // Neon Cyan for accents
+          glow: "rgba(0, 102, 255, 0.15)", // Subtle hover glows
+        }
       },
     },
   },

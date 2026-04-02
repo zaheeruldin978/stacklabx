@@ -34,3 +34,16 @@ enum Role {
   STUDENT
   ADMIN
 }
+
+
+model Post {
+  id        String   @id @default(cuid())
+  wpId      Int      @unique // To keep track of the original WordPress ID
+  title     String
+  content   String   @db.Text // Use Text type for long articles
+  excerpt   String   @db.Text
+  slug      String   @unique
+  date      String
+  image     String?
+  createdAt DateTime @default(now())
+}
