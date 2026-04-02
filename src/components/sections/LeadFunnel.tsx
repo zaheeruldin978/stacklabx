@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-// This relative path assumes you are in src/components/sections/
-// One ../ takes you to components, the second ../ takes you to src.
 import { submitLead } from "../../app/actions/leadActions";
 
 export default function LeadFunnel() {
@@ -11,87 +9,85 @@ export default function LeadFunnel() {
 
   async function handleAction(formData: FormData) {
     setMessage(null);
-    
     startTransition(async () => {
       const response = await submitLead(formData);
-      
       if (response?.error) {
         setMessage({ type: "error", text: response.error });
       } else if (response?.success) {
-        setMessage({ 
-          type: "success", 
-          text: "Protocol initiated. Our architects will contact you shortly." 
-        });
+        setMessage({ type: "success", text: "Architecture initialized. Check the Nerve Center." });
       }
     });
   }
 
   return (
-    <div className="glass-panel p-8 md:p-12 w-full max-w-2xl mx-auto relative overflow-hidden">
-      <div className="absolute -top-20 -right-20 w-64 h-64 bg-blue-600/10 rounded-full blur-[80px] pointer-events-none"></div>
-      
-      <h2 className="text-3xl font-bold mb-2 text-white">Calculate Your ROI</h2>
-      <p className="text-slate-400 mb-8 text-sm font-light">
-        Provide your project parameters to initialize the digital transformation.
-      </p>
+    <section className="w-full max-w-3xl mx-auto py-20 px-6">
+      <div className="bento-card p-8 md:p-12 relative overflow-hidden group">
+        {/* Subtle background glow */}
+        <div className="absolute -top-24 -left-24 w-48 h-48 bg-white/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-white/10 transition-all duration-700"></div>
+        
+        <div className="relative z-10">
+          <h2 className="text-4xl font-black text-white tracking-tighter mb-2">Initialize Protocol</h2>
+          <p className="text-slate-400 text-sm mb-10 font-medium uppercase tracking-widest">Lead Acquisition Stage</p>
 
-      {message && (
-        <div className={`p-4 mb-6 rounded-lg text-sm font-medium border animate-in fade-in slide-in-from-top-2 ${
-          message.type === "success" 
-            ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400" 
-            : "bg-red-500/10 border-red-500/50 text-red-400"
-        }`}>
-          {message.text}
+          {message && (
+            <div className={`p-4 mb-8 rounded-lg text-xs font-bold border uppercase tracking-widest animate-in fade-in slide-in-from-top-4 ${
+              message.type === "success" 
+                ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400" 
+                : "bg-red-500/10 border-red-500/50 text-red-400"
+            }`}>
+              {message.text}
+            </div>
+          )}
+
+          <form action={handleAction} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Principal Identity</label>
+                <input 
+                  name="name" 
+                  type="text" 
+                  required 
+                  placeholder="ZAHEER MALIK"
+                  className="bg-transparent border-b border-white/10 py-3 text-white focus:outline-none focus:border-white transition-colors placeholder:text-white/10 font-medium" 
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Communication Channel</label>
+                <input 
+                  name="email" 
+                  type="email" 
+                  required 
+                  placeholder="ZAHEER@STACKLABX.COM"
+                  className="bg-transparent border-b border-white/10 py-3 text-white focus:outline-none focus:border-white transition-colors placeholder:text-white/10 font-medium" 
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Target Technology Stack</label>
+              <select 
+                name="service" 
+                required 
+                defaultValue=""
+                className="bg-transparent border-b border-white/10 py-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer font-medium"
+              >
+                <option value="" disabled className="bg-black">SELECT ARCHITECTURE...</option>
+                <option value="Web Development" className="bg-black">NEXT.JS ENTERPRISE WEB</option>
+                <option value="AI Automation" className="bg-black">LLM WORKFLOW AUTOMATION</option>
+                <option value="Cloud Architecture" className="bg-black">POSTGRESQL SYSTEMS</option>
+              </select>
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={isPending}
+              className="w-full bg-white text-black font-black py-5 rounded-sm uppercase tracking-widest text-xs hover:bg-slate-200 transition-all active:scale-95 disabled:opacity-50"
+            >
+              {isPending ? "Connecting to Database..." : "Execute Initialization"}
+            </button>
+          </form>
         </div>
-      )}
-
-      <form action={handleAction} className="space-y-6 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Full Name</label>
-            <input 
-              name="name" 
-              type="text" 
-              required 
-              placeholder="Elon Musk"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-all" 
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Email Address</label>
-            <input 
-              name="email" 
-              type="email" 
-              required 
-              placeholder="elon@tesla.com"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-all" 
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Required Service</label>
-          <select 
-            name="service" 
-            required 
-            defaultValue=""
-            className="w-full bg-[#0f172a] border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
-          >
-            <option value="" disabled>Select technology stack...</option>
-            <option value="Web Development">Full-Stack Web Development</option>
-            <option value="AI Automation">AI Workflow Automation</option>
-            <option value="Cloud Architecture">Cloud Architecture</option>
-          </select>
-        </div>
-
-        <button 
-          type="submit" 
-          disabled={isPending}
-          className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-lg transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isPending ? "Connecting to Database..." : "Initialize Project"}
-        </button>
-      </form>
-    </div>
+      </div>
+    </section>
   );
 }
