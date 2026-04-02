@@ -1,8 +1,37 @@
 import { prisma } from "../../lib/prisma";
 import Link from "next/link";
 
+// --- DATA SANITIZATION ENGINE ---
+// This purges WordPress shortcodes and decodes HTML entities safely
+function sanitizeExcerpt(rawExcerpt: string | null) {
+  if (!rawExcerpt) return 'Read the full architectural breakdown inside...';
+
+  let clean = rawExcerpt
+    // 1. Purge WordPress Page Builder Shortcodes (e.g., [et_pb_section...])
+    .replace(/\[.*?\]/g, '')
+    // 2. Strip standard HTML tags to prevent React hydration errors
+    .replace(/<[^>]+>/g, ' ')
+    // 3. Translate raw HTML entities into human-readable punctuation
+    .replace(/&#8217;/g, "'")    // Right single quote / Apostrophe
+    .replace(/&#8216;/g, "'")    // Left single quote
+    .replace(/&#8220;/g, '"')    // Left double quote
+    .replace(/&#8221;/g, '"')    // Right double quote
+    .replace(/&#8211;/g, "-")    // En dash
+    .replace(/&#8212;/g, "—")    // Em dash
+    .replace(/&amp;/g, "&")      // Ampersand
+    .replace(/&hellip;/g, "...") // Ellipsis
+    .replace(/&nbsp;/g, " ")     // Non-breaking space
+    .replace(/&#[0-9]+;/g, "");  // Catch any remaining rogue encoded numbers
+
+  // 4. Clean up multiple spaces left behind by the stripping process
+  clean = clean.replace(/\s+/g, ' ').trim();
+
+  // If the excerpt was entirely shortcodes and is now empty, use the fallback
+  return clean.length > 5 ? clean : 'Read the full architectural breakdown inside...';
+}
+
 export default async function BlogPage() {
-  // 1. Fetching all data directly from your local PostgreSQL (Zero Latency)
+  // Fetching all data directly from your local PostgreSQL (Zero Latency)
   const posts = await prisma.post.findMany({
     orderBy: { createdAt: 'desc' }
   });
@@ -47,17 +76,15 @@ export default async function BlogPage() {
                     {post.date}
                   </span>
 
-                  {/* Title correctly decodes HTML entities */}
+                  {/* Title correctly decodes HTML entities natively via dangerouslySetInnerHTML */}
                   <h2 
                     className="text-2xl font-bold text-white mb-4 group-hover:text-stacklab-blue transition-colors leading-tight"
                     dangerouslySetInnerHTML={{ __html: post.title }}
                   />
 
-                  {/* THE FIX: Stripped raw HTML to prevent React Hydration nesting errors */}
+                  {/* THE FIX: Outputting the fully sanitized, readable text */}
                   <p className="text-slate-500 text-sm font-light leading-relaxed mb-8 flex-1 line-clamp-2">
-                    {post.excerpt 
-                      ? post.excerpt.replace(/<[^>]+>/g, '').replace(/&hellip;/g, '...').replace(/&#8211;/g, '-')
-                      : 'Read the full architectural breakdown inside...'}
+                    {sanitizeExcerpt(post.excerpt)}
                   </p>
 
                   <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between">

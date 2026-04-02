@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { submitLead } from "../../app/actions/leadActions";
+import { servicesConfig } from "../../lib/servicesData";
 
 export default function LeadFunnel() {
   const [isPending, startTransition] = useTransition();
@@ -32,14 +33,14 @@ export default function LeadFunnel() {
   }
 
   return (
-    <section className="w-full max-w-3xl mx-auto py-20 px-6">
-      <div className="bento-card p-8 md:p-12 relative overflow-hidden group">
-        {/* Subtle background glow effect */}
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-white/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-white/10 transition-all duration-700"></div>
+    <section className="w-full max-w-3xl mx-auto px-6">
+      <div className="bento-card p-8 md:p-12 relative overflow-hidden group border-white/10 bg-[#050505]">
+        {/* Subtle background glow effect synced with global theme */}
+        <div className="absolute -top-24 -left-24 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-cyan-500/10 transition-all duration-700"></div>
         
-        <div className="relative z-10">
+        <div className="relative z-10 text-left">
           <h2 className="text-4xl font-black text-white tracking-tighter mb-2">Initialize Protocol</h2>
-          <p className="text-slate-400 text-sm mb-10 font-medium uppercase tracking-widest">Lead Acquisition Stage</p>
+          <p className="text-slate-500 text-sm mb-10 font-medium uppercase tracking-widest">Lead Acquisition Stage</p>
 
           {/* System Status Messaging */}
           {message && (
@@ -62,7 +63,7 @@ export default function LeadFunnel() {
                   type="text" 
                   required 
                   placeholder="ZAHEER MALIK"
-                  className="bg-transparent border-b border-white/10 py-3 text-white focus:outline-none focus:border-white transition-colors placeholder:text-white/10 font-medium" 
+                  className="bg-transparent border-b border-white/10 py-3 text-white focus:outline-none focus:border-cyan-400 transition-colors placeholder:text-white/10 font-medium uppercase" 
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -72,35 +73,37 @@ export default function LeadFunnel() {
                   type="email" 
                   required 
                   placeholder="ZAHEER@STACKLABX.COM"
-                  className="bg-transparent border-b border-white/10 py-3 text-white focus:outline-none focus:border-white transition-colors placeholder:text-white/10 font-medium" 
+                  className="bg-transparent border-b border-white/10 py-3 text-white focus:outline-none focus:border-cyan-400 transition-colors placeholder:text-white/10 font-medium uppercase" 
                 />
               </div>
             </div>
 
-            {/* Architecture Selector */}
+            {/* Architecture Selector - Now Mapped to the Master Database */}
             <div className="flex flex-col gap-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Target Technology Stack</label>
               <select 
                 name="service" 
                 required 
                 defaultValue=""
-                className="bg-transparent border-b border-white/10 py-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer font-medium"
+                className="bg-transparent border-b border-white/10 py-3 text-white focus:outline-none focus:border-cyan-400 transition-colors appearance-none cursor-pointer font-medium uppercase"
               >
-                <option value="" disabled className="bg-black">SELECT ARCHITECTURE...</option>
-                <option value="Web Development" className="bg-black">NEXT.JS ENTERPRISE WEB</option>
-                <option value="AI Automation" className="bg-black">LLM WORKFLOW AUTOMATION</option>
-                <option value="Cloud Architecture" className="bg-black">POSTGRESQL SYSTEMS</option>
+                <option value="" disabled className="bg-black text-slate-500">SELECT ARCHITECTURE...</option>
+                {servicesConfig.map((service) => (
+                  <option key={service.slug} value={service.title} className="bg-[#050505] text-white py-2">
+                    {service.title.toUpperCase()}
+                  </option>
+                ))}
               </select>
             </div>
 
-            {/* UK GDPR Compliance Layer */}
+            {/* UK GDPR Compliance Layer (Restored to your exact specs) */}
             <div className="flex items-start gap-3 py-4 border-t border-white/10 mt-4">
               <input 
                 type="checkbox" 
                 id="gdpr" 
                 name="gdprConsent" 
                 required 
-                className="mt-1 w-4 h-4 rounded border border-white/20 bg-black text-white focus:ring-1 focus:ring-white focus:ring-offset-0 appearance-none checked:bg-white checked:after:content-['✓'] checked:after:text-black checked:after:text-[10px] checked:after:font-bold checked:after:flex checked:after:justify-center checked:after:items-center cursor-pointer transition-all"
+                className="mt-1 w-4 h-4 rounded border border-white/20 bg-black text-white focus:ring-1 focus:ring-cyan-400 focus:ring-offset-0 appearance-none checked:bg-cyan-400 checked:after:content-['✓'] checked:after:text-black checked:after:text-[10px] checked:after:font-bold checked:after:flex checked:after:justify-center checked:after:items-center cursor-pointer transition-all"
               />
               <label htmlFor="gdpr" className="text-[9px] font-medium text-slate-500 uppercase tracking-widest leading-relaxed cursor-pointer hover:text-slate-300 transition-colors">
                 I explicitly consent to StacklabX Ltd collecting and processing my data to handle this inquiry. I understand my data is stored securely and I maintain the right to request deletion at any time under UK GDPR guidelines.
@@ -111,7 +114,7 @@ export default function LeadFunnel() {
             <button 
               type="submit" 
               disabled={isPending}
-              className="w-full bg-white text-black font-black py-5 rounded-sm uppercase tracking-widest text-xs hover:bg-slate-200 transition-all active:scale-95 disabled:opacity-50"
+              className="w-full bg-white text-black font-black py-5 rounded-sm uppercase tracking-[0.2em] text-[10px] hover:bg-cyan-400 hover:shadow-[0_0_20px_rgba(0,229,255,0.4)] transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:hover:bg-white disabled:hover:shadow-none"
             >
               {isPending ? "Encrypting & Transmitting..." : "Execute Initialization"}
             </button>
