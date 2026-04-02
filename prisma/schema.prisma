@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Model for the "Calculate ROI" Funnel Leads
+model Lead {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  company   String?
+  service   String   // e.g., "AI Automation", "Web Dev"
+  budget    String?
+  status    String   @default("NEW") // NEW, CONTACTED, CLOSED
+  createdAt DateTime @default(now())
+}
+
+// Model for Academy/Tutorial Users
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
