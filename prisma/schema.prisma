@@ -1,14 +1,9 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  // Note: URL intentionally removed for Prisma 7+ Adapter Architecture. 
-  // Connection is now handled securely in src/lib/db.ts
 }
 
 // ==========================================
@@ -18,17 +13,17 @@ model Lead {
   id           String   @id @default(uuid())
   email        String
 
-  // Standard Contact Info (Optional for Calculator Leads)
+  // Standard Contact Info
   name         String?
   company      String?
-  service      String?   // e.g., "AI Automation", "Web Dev"
+  service      String?   
   budget       String?
-  status       String    @default("NEW") // NEW, CONTACTED, CLOSED
+  status       String    @default("NEW")
 
-  // Telemetry Data (Optional for Standard Contact Leads)
-  traffic      Int?      // API Requests in thousands
-  db    Size       Int?      // Database size in GB
-  computeType  String?   // Serverless vs Dedicated
+  // Telemetry Data
+  traffic      Int?      
+  dbSize       Int?      // FIXED: Closed the gap between 'db' and 'Size'
+  computeType  String?   
   standardCost Int?
   stacklabCost Int?
   source       String    @default("Global Network")
@@ -54,9 +49,9 @@ enum Role {
 
 model Post {
   id        String   @id @default(cuid())
-  wpId      Int      @unique // To keep track of the original WordPress ID
+  wpId      Int      @unique 
   title     String
-  content   String   @db.Text // Use Text type for long articles
+  content   String   @db.Text 
   excerpt   String   @db.Text
   slug      String   @unique
   date      String

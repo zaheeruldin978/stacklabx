@@ -1,16 +1,11 @@
-import { PrismaClient } from "@prisma/client";
-import { Pool } from "pg";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@prisma/client';
 
-// 1. Initialize the native Postgres connection pool
-const connectionString = process.env.DATABASE_URL;
-const pool = new Pool({ connectionString });
-
-// 2. Attach the Prisma Edge Adapter
-const adapter = new PrismaPg(pool);
-
-// 3. Inject the adapter into the Prisma Client
+// This is the Singleton logic that prevents database crashes during development
 const prismaClientSingleton = () => {
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 };
 
