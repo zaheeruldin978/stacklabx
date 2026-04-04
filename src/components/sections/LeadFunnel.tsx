@@ -1,126 +1,108 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { submitLead } from "../../app/actions/leadActions";
-import { servicesConfig } from "../../lib/servicesData";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { submitLead, TelemetryData } from "../../app/actions/lead";
 
-export default function LeadFunnel() {
-  const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+export default function LeadFunnel({ telemetry }: { telemetry?: TelemetryData }) {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "encrypting" | "success">("idle");
 
-  async function handleAction(formData: FormData) {
-    setMessage(null);
-    
-    // Security Layer: Explicit Client-Side GDPR Verification
-    const gdprConsent = formData.get("gdprConsent");
-    if (!gdprConsent) {
-      setMessage({ type: "error", text: "UK GDPR compliance requires explicit consent." });
-      return;
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
 
-    startTransition(async () => {
-      const response = await submitLead(formData);
-      
-      if (response?.error) {
-        setMessage({ type: "error", text: response.error });
-      } else if (response?.success) {
-        setMessage({ 
-          type: "success", 
-          text: "Architecture initialized. Data securely transmitted to Nerve Center." 
-        });
-      }
-    });
-  }
+    setStatus("encrypting");
+
+    const formData = new FormData();
+    formData.append("email", email);
+
+    // Transmit email + silent telemetry data to the backend
+    await submitLead(formData, telemetry);
+
+    setStatus("success");
+  };
 
   return (
-    <section className="w-full max-w-3xl mx-auto px-6">
-      <div className="bento-card p-8 md:p-12 relative overflow-hidden group border-white/10 bg-[#050505]">
-        {/* Subtle background glow effect synced with global theme */}
-        <div className="absolute -top-24 -left-24 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-cyan-500/10 transition-all duration-700"></div>
+    <div className="w-full max-w-2xl mx-auto relative group">
+      <div className="absolute inset-0 bg-cyan-500/5 blur-[30px] rounded-full group-hover:bg-cyan-500/10 transition-colors duration-700 pointer-events-none"></div>
+      
+      <div className="relative bg-[#030303] border border-white/10 rounded-2xl p-2 shadow-2xl overflow-hidden">
         
-        <div className="relative z-10 text-left">
-          <h2 className="text-4xl font-black text-white tracking-tighter mb-2">Initialize Protocol</h2>
-          <p className="text-slate-500 text-sm mb-10 font-medium uppercase tracking-widest">Lead Acquisition Stage</p>
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+          <div className="flex gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
+            <div className="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
+            <div className="w-2.5 h-2.5 rounded-full bg-cyan-500/50 animate-pulse"></div>
+          </div>
+          <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest ml-2">
+            {telemetry ? "Protocol: Architecture Review" : "Protocol: Global Initialization"}
+          </span>
+        </div>
 
-          {/* System Status Messaging */}
-          {message && (
-            <div className={`p-4 mb-8 rounded-lg text-xs font-bold border uppercase tracking-widest animate-in fade-in slide-in-from-top-4 ${
-              message.type === "success" 
-                ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400" 
-                : "bg-red-500/10 border-red-500/50 text-red-400"
-            }`}>
-              {message.text}
-            </div>
+        <AnimatePresence mode="wait">
+          {status === "idle" && (
+            <motion.form 
+              key="form"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }}
+              onSubmit={handleSubmit}
+              className="flex flex-col md:flex-row gap-2 p-2"
+            >
+              <div className="relative flex-1 flex items-center">
+                <span className="absolute left-4 text-cyan-500 font-mono text-lg">❯</span>
+                <input 
+                  type="email" 
+                  required
+                  placeholder="ENTER ENTERPRISE EMAIL..."
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-transparent border-none text-white placeholder-slate-700 py-4 pl-10 pr-4 font-mono text-xs tracking-widest outline-none uppercase"
+                />
+              </div>
+              <button 
+                type="submit"
+                className="bg-white text-black font-black text-[10px] uppercase tracking-[0.2em] px-8 py-4 rounded-xl hover:bg-cyan-400 transition-colors"
+              >
+                Establish Link
+              </button>
+            </motion.form>
           )}
 
-          <form action={handleAction} className="space-y-8">
-            {/* Input Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Principal Identity</label>
-                <input 
-                  name="name" 
-                  type="text" 
-                  required 
-                  placeholder="ZAHEER MALIK"
-                  className="bg-transparent border-b border-white/10 py-3 text-white focus:outline-none focus:border-cyan-400 transition-colors placeholder:text-white/10 font-medium uppercase" 
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Communication Channel</label>
-                <input 
-                  name="email" 
-                  type="email" 
-                  required 
-                  placeholder="ZAHEER@STACKLABX.COM"
-                  className="bg-transparent border-b border-white/10 py-3 text-white focus:outline-none focus:border-cyan-400 transition-colors placeholder:text-white/10 font-medium uppercase" 
-                />
-              </div>
-            </div>
-
-            {/* Architecture Selector - Now Mapped to the Master Database */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Target Technology Stack</label>
-              <select 
-                name="service" 
-                required 
-                defaultValue=""
-                className="bg-transparent border-b border-white/10 py-3 text-white focus:outline-none focus:border-cyan-400 transition-colors appearance-none cursor-pointer font-medium uppercase"
-              >
-                <option value="" disabled className="bg-black text-slate-500">SELECT ARCHITECTURE...</option>
-                {servicesConfig.map((service) => (
-                  <option key={service.slug} value={service.title} className="bg-[#050505] text-white py-2">
-                    {service.title.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* UK GDPR Compliance Layer (Restored to your exact specs) */}
-            <div className="flex items-start gap-3 py-4 border-t border-white/10 mt-4">
-              <input 
-                type="checkbox" 
-                id="gdpr" 
-                name="gdprConsent" 
-                required 
-                className="mt-1 w-4 h-4 rounded border border-white/20 bg-black text-white focus:ring-1 focus:ring-cyan-400 focus:ring-offset-0 appearance-none checked:bg-cyan-400 checked:after:content-['✓'] checked:after:text-black checked:after:text-[10px] checked:after:font-bold checked:after:flex checked:after:justify-center checked:after:items-center cursor-pointer transition-all"
-              />
-              <label htmlFor="gdpr" className="text-[9px] font-medium text-slate-500 uppercase tracking-widest leading-relaxed cursor-pointer hover:text-slate-300 transition-colors">
-                I explicitly consent to StacklabX Ltd collecting and processing my data to handle this inquiry. I understand my data is stored securely and I maintain the right to request deletion at any time under UK GDPR guidelines.
-              </label>
-            </div>
-
-            {/* Execution Trigger */}
-            <button 
-              type="submit" 
-              disabled={isPending}
-              className="w-full bg-white text-black font-black py-5 rounded-sm uppercase tracking-[0.2em] text-[10px] hover:bg-cyan-400 hover:shadow-[0_0_20px_rgba(0,229,255,0.4)] transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:hover:bg-white disabled:hover:shadow-none"
+          {status === "encrypting" && (
+            <motion.div 
+              key="encrypting"
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="flex items-center justify-center gap-4 p-8"
             >
-              {isPending ? "Encrypting & Transmitting..." : "Execute Initialization"}
-            </button>
-          </form>
-        </div>
+              <span className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></span>
+              <span className="font-mono text-xs text-cyan-400 uppercase tracking-widest animate-pulse">Encrypting Payload & Establishing Secure Channel...</span>
+            </motion.div>
+          )}
+
+          {status === "success" && (
+            <motion.div 
+              key="success"
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center justify-center p-8 text-center"
+            >
+              <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4 border border-emerald-500/20">
+                <span className="text-xl">✓</span>
+              </div>
+              <h4 className="text-white font-black uppercase tracking-widest mb-2">Channel Established</h4>
+              <p className="text-slate-500 text-xs font-mono">Our core architectural team will contact you within 2 hours.</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {telemetry && status === "idle" && (
+          <div className="px-6 pb-4 pt-2">
+             <div className="flex items-center gap-2 text-[8px] font-mono text-slate-600 uppercase tracking-widest">
+               <span className="w-1 h-1 rounded-full bg-blue-500 animate-ping"></span>
+               Telemetry Attached ({telemetry.traffic}K Req, {telemetry.dbSize}GB DB)
+             </div>
+          </div>
+        )}
       </div>
-    </section>
+    </div>
   );
 }

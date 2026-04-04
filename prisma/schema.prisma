@@ -7,21 +7,38 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // Note: URL intentionally removed for Prisma 7+ Adapter Architecture. 
+  // Connection is now handled securely in src/lib/db.ts
 }
 
-// Model for the "Calculate ROI" Funnel Leads
+// ==========================================
+// THE UNIFIED ENTERPRISE LEAD ENGINE
+// ==========================================
 model Lead {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  company   String?
-  service   String   // e.g., "AI Automation", "Web Dev"
-  budget    String?
-  status    String   @default("NEW") // NEW, CONTACTED, CLOSED
-  createdAt DateTime @default(now())
+  id           String   @id @default(uuid())
+  email        String
+
+  // Standard Contact Info (Optional for Calculator Leads)
+  name         String?
+  company      String?
+  service      String?   // e.g., "AI Automation", "Web Dev"
+  budget       String?
+  status       String    @default("NEW") // NEW, CONTACTED, CLOSED
+
+  // Telemetry Data (Optional for Standard Contact Leads)
+  traffic      Int?      // API Requests in thousands
+  db    Size       Int?      // Database size in GB
+  computeType  String?   // Serverless vs Dedicated
+  standardCost Int?
+  stacklabCost Int?
+  source       String    @default("Global Network")
+
+  createdAt    DateTime  @default(now())
 }
 
-// Model for Academy/Tutorial Users
+// ==========================================
+// ACADEMY & CONTENT MODELS
+// ==========================================
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -34,7 +51,6 @@ enum Role {
   STUDENT
   ADMIN
 }
-
 
 model Post {
   id        String   @id @default(cuid())
