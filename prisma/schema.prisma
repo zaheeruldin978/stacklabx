@@ -18,17 +18,20 @@ model Lead {
   company      String?
   service      String?   
   budget       String?
-  status       String    @default("NEW")
+  status       String   @default("NEW")
 
   // Telemetry Data
   traffic      Int?      
-  dbSize       Int?      // FIXED: Closed the gap between 'db' and 'Size'
+  dbSize       Int?      
   computeType  String?   
   standardCost Int?
   stacklabCost Int?
-  source       String    @default("Global Network")
+  source       String   @default("Global Network")
 
-  createdAt    DateTime  @default(now())
+  // --- RECOVERY VAULT FLAG ---
+  isDeleted    Boolean  @default(false)
+
+  createdAt    DateTime @default(now())
 }
 
 // ==========================================
@@ -56,5 +59,9 @@ model Post {
   slug      String   @unique
   date      String
   image     String?
+  
+  // --- RECOVERY VAULT FLAG ---
+  isDeleted Boolean  @default(false)
+  
   createdAt DateTime @default(now())
 }

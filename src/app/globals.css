@@ -41,3 +41,40 @@
     transform: translateY(-2px);
   }
 }
+
+/* ==========================================
+   STACKLABX: THE NUCLEAR TYPOGRAPHY OVERRIDE
+   Forces messy WordPress data to render as Enterprise Headings
+   ========================================== */
+
+/* 1. Force any bold-only paragraph to become an H2 */
+.prose p:has(> strong:only-child),
+.prose p:has(> b:only-child),
+.prose p:has(> span > strong:only-child) {
+    font-size: 1.75rem !important;
+    font-weight: 900 !important;
+    color: #ffffff !important;
+    margin-top: 4rem !important;
+    margin-bottom: 1.5rem !important;
+    border-left: 3px solid #0066FF !important;
+    padding-left: 1.5rem !important;
+    line-height: 1.2 !important;
+    letter-spacing: -0.03em !important;
+    display: block !important;
+}
+
+/* 2. Destroy WordPress Empty Gaps */
+.prose p:empty,
+.prose p:has(> br:only-child),
+.prose p:not(:has(*)):contains('&nbsp;') {
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* 3. Refine standard paragraphs for better reading density */
+.prose p {
+    margin-bottom: 1.5rem !important;
+    line-height: 1.8 !important;
+    color: #94a3b8 !important; /* slate-400 */
+}

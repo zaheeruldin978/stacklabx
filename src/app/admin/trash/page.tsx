@@ -1,0 +1,93 @@
+import Link from "next/link";
+import db from "../../../lib/db";
+import { revalidatePath } from "next/cache";
+
+export const dynamic = 'force-dynamic';
+
+export default async function TrashDashboard() {
+  // Fetch ONLY deleted assets
+  const [posts, leads] = await Promise.all([
+    db.post.findMany({ where: { isDeleted: true }, orderBy: { createdAt: 'desc' } }),
+    db.lead.findMany({ where: { isDeleted: true }, orderBy: { createdAt: 'desc' } })
+  ]);
+
+  // ACTION 1: RESTORE
+  async function restoreArticle(formData: FormData) {
+    "use server";
+    const slug = formData.get("slug") as string;
+    if (!slug) return;
+    try {
+      await db.post.update({ where: { slug }, data: { isDeleted: false } });
+      revalidatePath("/admin/trash");
+      revalidatePath("/admin");
+      revalidatePath("/blog");
+    } catch (error) { console.error("RESTORE_FAILURE:", error); }
+  }
+
+  // ACTION 2: PERMANENT PURGE
+  async function nuclearPurge(formData: FormData) {
+    "use server";
+    const slug = formData.get("slug") as string;
+    if (!slug) return;
+    try {
+      await db.post.delete({ where: { slug } });
+      revalidatePath("/admin/trash");
+    } catch (error) { console.error("NUCLEAR_FAILURE:", error); }
+  }
+
+  return (
+    <main className="w-full max-w-6xl mx-auto">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+        <p className="text-[10px] font-mono tracking-[0.2em] text-red-500 uppercase">Quarantine Zone Active</p>
+      </div>
+      <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-12">Recovery <span className="text-slate-600">Vault.</span></h1>
+
+      <section className="bg-[#050505] border border-red-500/10 rounded-3xl shadow-2xl overflow-hidden">
+        <div className="p-8 border-b border-red-500/10 bg-red-500/5 flex items-center justify-between">
+          <h2 className="text-sm font-black text-red-400 uppercase tracking-widest flex items-center gap-3">
+            <span>⊗</span> Trashed Payloads
+          </h2>
+          <span className="text-[10px] font-mono text-red-400 bg-red-400/10 px-3 py-1 rounded-full border border-red-400/20">
+            {posts.length + leads.length} IN VAULT
+          </span>
+        </div>
+
+        <div className="divide-y divide-white/5">
+          {posts.length === 0 && leads.length === 0 ? (
+            <div className="p-12 text-center text-slate-500 text-xs font-mono uppercase tracking-widest">Vault is empty.</div>
+          ) : (
+            posts.map((post: any) => (
+              <div key={post.slug} className="p-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:bg-white/[0.02] transition-colors">
+                
+                <div className="flex-1 w-full">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-[10px] font-mono text-slate-500">{new Date(post.createdAt).toLocaleDateString('en-GB')}</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest bg-red-500/10 text-red-400 px-2 py-0.5 rounded border border-red-500/20 line-through">/{post.slug}</span>
+                  </div>
+                  <p className="text-lg font-bold text-slate-500 line-clamp-1" dangerouslySetInnerHTML={{ __html: post.title }} />
+                </div>
+                
+                <div className="flex items-center gap-4 w-full md:w-auto">
+                  <form action={restoreArticle}>
+                    <input type="hidden" name="slug" value={post.slug} />
+                    <button type="submit" className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest px-4 py-2 rounded-lg border border-emerald-400/20 hover:bg-emerald-500 hover:text-white transition-all w-full md:w-auto">
+                      Restore Asset
+                    </button>
+                  </form>
+                  <form action={nuclearPurge}>
+                    <input type="hidden" name="slug" value={post.slug} />
+                    <button type="submit" className="text-[10px] font-bold text-red-600 uppercase tracking-widest px-4 py-2 rounded-lg hover:text-red-400 underline underline-offset-4 transition-all w-full md:w-auto">
+                      Delete Forever
+                    </button>
+                  </form>
+                </div>
+
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}
