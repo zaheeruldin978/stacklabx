@@ -3,10 +3,12 @@ import Link from "next/link";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
+    // REMOVED pt-20: The layout now snaps to the very top of the window
     <div className="flex min-h-screen bg-[#000000] text-slate-200 selection:bg-blue-600/30">
       
       {/* --- THE COMMAND SIDEBAR --- */}
-      <aside className="w-64 border-r border-white/10 p-6 flex flex-col gap-8 hidden md:flex bg-[#0a0a0a] relative z-50">
+      {/* CHANGED: top-20 to top-0, and height to h-screen */}
+      <aside className="w-64 border-r border-white/10 p-6 flex flex-col gap-8 hidden md:flex bg-[#0a0a0a] sticky top-0 h-screen overflow-y-auto z-40">
         
         {/* BRANDING */}
         <div className="text-xl font-bold tracking-tighter text-white">
@@ -14,42 +16,49 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
         
         {/* NAVIGATION MATRIX */}
-        <nav className="flex flex-col gap-2 flex-1">
+        <nav className="flex flex-col gap-1 flex-1">
           
           <Link href="/admin" className="px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:bg-white/5 hover:text-white transition-all border border-transparent hover:border-white/10 group flex items-center gap-3">
-            <span className="text-blue-500 group-hover:scale-110 transition-transform">⌖</span> Command Overview
+            <span className="text-blue-500 group-hover:scale-110 transition-transform">⌖</span> Overview
+          </Link>
+
+          <div className="pt-6 pb-2 text-[10px] font-bold text-slate-600 uppercase tracking-widest px-4">Modules</div>
+          
+          <Link href="/admin/telemetry" className="px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:bg-white/5 hover:text-white transition-all border border-transparent hover:border-white/10 group flex items-center gap-3">
+            <span className="text-emerald-500 group-hover:scale-110 transition-transform">⌖</span> Client Telemetry
           </Link>
           
+          <Link href="/admin/protocols" className="px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:bg-white/5 hover:text-white transition-all border border-transparent hover:border-white/10 group flex items-center gap-3">
+            <span className="text-purple-500 group-hover:scale-110 transition-transform">⌘</span> Data Protocols
+          </Link>
+
           <Link href="/admin/editor" className="px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:bg-white/5 hover:text-white transition-all border border-transparent hover:border-white/10 group flex items-center gap-3">
-            <span className="text-cyan-500 group-hover:scale-110 transition-transform">+</span> Initialize Protocol
+            <span className="text-cyan-500 group-hover:scale-110 transition-transform">+</span> Inject Payload
           </Link>
+
+          <div className="pt-6 pb-2 text-[10px] font-bold text-slate-600 uppercase tracking-widest px-4">System</div>
           
-          <Link href="/admin/trash" className="px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all border border-transparent hover:border-red-500/20 group flex items-center gap-3 mt-6">
+          <Link href="/admin/trash" className="px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all border border-transparent hover:border-red-500/20 group flex items-center gap-3">
             <span className="text-red-500 group-hover:scale-110 transition-transform">⊗</span> Recovery Vault
           </Link>
-          
-          <div className="px-4 py-3 text-sm font-medium text-slate-600 cursor-not-allowed flex items-center gap-3 mt-2 border border-transparent">
-            <span className="opacity-50">◬</span> Analytics (Locked)
-          </div>
 
         </nav>
 
         {/* SYSTEM STATUS */}
-        <div className="pt-6 border-t border-white/5 text-[9px] font-mono text-slate-500 uppercase tracking-widest text-center">
+        <div className="pt-6 border-t border-white/5 text-[9px] font-mono text-slate-500 uppercase tracking-widest text-center mt-auto">
           StacklabX Infrastructure <br/> System Active
         </div>
 
       </aside>
       
       {/* --- MAIN CONTENT INJECTION --- */}
-      <main className="flex-1 relative overflow-y-auto h-screen">
-        {/* Global Atmospheric Glow for the Admin Area */}
+      <main className="flex-1 relative w-full">
         <div className="fixed inset-0 pointer-events-none z-0">
+          {/* CHANGED: top-20 to top-0 */}
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-900/5 blur-[150px] rounded-full"></div>
         </div>
         
-        {/* The children prop renders page.tsx, editor/page.tsx, or trash/page.tsx */}
-        <div className="relative z-10 p-8">
+        <div className="relative z-10 p-8 md:p-12">
           {children}
         </div>
       </main>

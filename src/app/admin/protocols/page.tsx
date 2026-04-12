@@ -5,13 +5,13 @@ import { revalidatePath } from "next/cache";
 export const dynamic = 'force-dynamic';
 
 export default async function ProtocolsDashboard() {
-  // 1. FETCH ONLY ACTIVE POSTS
+  // 1. FETCH ONLY ACTIVE POSTS (isDeleted: false)
   const posts = await db.post.findMany({ 
     where: { isDeleted: false }, 
     orderBy: { createdAt: 'desc' } 
   });
 
-  // 2. SOFT DELETE: ARTICLE
+  // 2. SOFT DELETE: ARTICLE (Moves to Recovery Vault)
   async function trashArticle(formData: FormData) {
     "use server";
     const slug = formData.get("slug") as string;
@@ -30,13 +30,14 @@ export default async function ProtocolsDashboard() {
   return (
     <main className="w-full max-w-6xl mx-auto">
       
+      {/* --- BREADCRUMB --- */}
       <div className="mb-8">
         <Link href="/admin" className="text-[10px] font-bold text-slate-500 hover:text-cyan-400 uppercase tracking-widest transition-colors inline-block">
           &larr; Back to Overview
         </Link>
       </div>
 
-      {/* --- COMMAND HEADER --- */}
+      {/* --- MODULE HEADER --- */}
       <div className="mb-12">
         <div className="flex items-center gap-3 mb-4">
           <span className="relative flex h-2 w-2">
@@ -48,8 +49,8 @@ export default async function ProtocolsDashboard() {
         <h1 className="text-5xl md:text-6xl font-black tracking-tighter">Data <span className="text-slate-600">Protocols.</span></h1>
       </div>
 
-      {/* --- CONTENT PAYLOADS --- */}
-      <section className="bg-[#050505] border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
+      {/* --- CONTENT PAYLOADS LIST --- */}
+      <section className="bg-[#050505] border border-white/10 rounded-3xl shadow-2xl overflow-hidden mb-12">
         <div className="p-8 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
@@ -85,6 +86,14 @@ export default async function ProtocolsDashboard() {
                 </div>
 
                 <div className="flex items-center gap-6">
+                  {/* EDIT LINK */}
+                  <Link 
+                    href={`/admin/editor/${post.slug}`} 
+                    className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 uppercase tracking-widest transition-colors flex items-center gap-2"
+                  >
+                    Edit <span>✎</span>
+                  </Link>
+
                   <Link 
                     href={`/blog/${post.slug}`} 
                     target="_blank"
@@ -106,7 +115,6 @@ export default async function ProtocolsDashboard() {
           )}
         </div>
       </section>
-
     </main>
   );
 }
