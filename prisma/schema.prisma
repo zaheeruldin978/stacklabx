@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ==========================================
@@ -51,17 +52,21 @@ enum Role {
 }
 
 model Post {
-  id        String   @id @default(cuid())
-  wpId      Int      @unique 
-  title     String
-  content   String   @db.Text 
-  excerpt   String   @db.Text
-  slug      String   @unique
-  date      String
-  image     String?
+  // ... keep other fields ...
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+}
+
+model Category {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  slug      String     @unique
   
-  // --- RECOVERY VAULT FLAG ---
-  isDeleted Boolean  @default(false)
+  // Self-relation for Subcategories
+  parentId  String?
+  parent    Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children  Category[] @relation("SubCategories")
   
-  createdAt DateTime @default(now())
+  posts     Post[]
+  createdAt DateTime   @default(now())
 }

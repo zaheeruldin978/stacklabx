@@ -9,6 +9,20 @@ export async function publishArticle(formData: FormData) {
   const excerpt = formData.get("excerpt") as string;
   const content = formData.get("content") as string;
   const image = formData.get("image") as string;
+  const status = (formData.get("status") as string) || "PUBLISHED";
+
+  // --- NEW: TAXONOMY & VISIBILITY EXTRACTION ---
+  const category = (formData.get("category") as string) || "Uncategorized";
+  const visibility = (formData.get("visibility") as string) || "PUBLIC";
+  
+  // Parse tags securely (Fallback to empty array)
+  const tagsRaw = formData.get("tags") as string;
+  let tags: string[] = [];
+  try { tags = tagsRaw ? JSON.parse(tagsRaw) : []; } catch (e) { tags = []; }
+
+  // Parse Scheduled Date
+  const publishedAtRaw = formData.get("publishedAt") as string;
+  const publishedAt = publishedAtRaw ? new Date(publishedAtRaw) : new Date();
 
   // 1. Validation Shield
   if (!title || !slug || !content) {
@@ -16,42 +30,37 @@ export async function publishArticle(formData: FormData) {
   }
 
   try {
-    // 2. Algorithmically bypass the old WordPress ID requirement
-    // Generates a unique 9-digit integer to satisfy the schema without migrations
-    const simulatedWpId = Math.floor(100000000 + Math.random() * 900000000);
-    
-    // Format the date to match your schema's String requirement (e.g., "April 6, 2026")
-    const dateStr = new Date().toLocaleDateString('en-US', { 
-      year: 'numeric', month: 'long', day: 'numeric' 
-    });
-
-    // 3. Database Injection
+    // 2. Secure Database Injection
     await db.post.create({
       data: {
-        wpId: simulatedWpId,
         title: title.trim(),
         slug: slug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-        excerpt: excerpt.trim(),
+        excerpt: excerpt?.trim() || "",
         content: content.trim(),
         image: image || null,
-        date: dateStr,
+        status: status,
+        category: category,
+        tags: tags,
+        visibility: visibility,
+        publishedAt: publishedAt,
       },
     });
 
-    // 4. Force Edge Cache Revalidation
-    // This tells Next.js 15 to instantly update the live blog without a server restart
+    // 3. Force Edge Cache Revalidation
+    revalidatePath("/admin");
     revalidatePath("/blog");
     revalidatePath("/");
 
-    return { success: true, message: "Article injected into Global Network." };
+    return { 
+      success: true, 
+      message: status === "DRAFT" ? "Draft saved securely to vault." : "Protocol Deployed to Global Network." 
+    };
+
   } catch (error: any) {
     console.error("PUBLISHING_FAILURE:", error);
-    
-    // Check for duplicate slugs
     if (error.code === 'P2002') {
-      return { success: false, message: "URL Slug already exists. Choose a unique path." };
+      return { success: false, message: "CRITICAL: URL Slug already exists. Choose a unique path." };
     }
-    
-    return { success: false, message: "Database write failure." };
+    return { success: false, message: "System failure during deployment." };
   }
 }
