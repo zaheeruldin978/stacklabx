@@ -6,8 +6,11 @@ import { useRouter } from "next/navigation";
 import { publishArticle } from "../../actions/publish";
 import SEOAnalyzer from "@/components/SEOAnalyzer";
 
-// 1. IMPORT THE TIPTAP ENTERPRISE ENGINE & ULTIMATE EXTENSIONS
+// 1. TIPTAP V3 CORE & MENUS
 import { useEditor, EditorContent } from '@tiptap/react';
+import { BubbleMenu } from '@tiptap/react/menus';
+
+// 2. EXTENSIONS
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import LinkExtension from '@tiptap/extension-link';
@@ -21,14 +24,39 @@ import Typography from '@tiptap/extension-typography';
 import Superscript from '@tiptap/extension-superscript';
 import Subscript from '@tiptap/extension-subscript';
 import Youtube from '@tiptap/extension-youtube';
+import FontFamily from '@tiptap/extension-font-family';
+import CharacterCount from '@tiptap/extension-character-count';
+
+// NEW ELITE MECHANICS
+import Gapcursor from '@tiptap/extension-gapcursor';
+import Dropcursor from '@tiptap/extension-dropcursor';
+
+// ADVANCED SYNTAX HIGHLIGHTING
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { common, createLowlight } from 'lowlight';
+import 'highlight.js/styles/atom-one-dark.css';
+
+// 3. TIPTAP V3 NAMED EXPORTS
+// @ts-ignore
 import { Table } from '@tiptap/extension-table';
-import TableRow from '@tiptap/extension-table-row';
-import TableCell from '@tiptap/extension-table-cell';
-import TableHeader from '@tiptap/extension-table-header';
+// @ts-ignore
+import { TableRow } from '@tiptap/extension-table-row';
+// @ts-ignore
+import { TableCell } from '@tiptap/extension-table-cell';
+// @ts-ignore
+import { TableHeader } from '@tiptap/extension-table-header';
+// @ts-ignore
+import { TextStyle } from '@tiptap/extension-text-style';
+// @ts-ignore
+import { Color } from '@tiptap/extension-color';
+
+const lowlight = createLowlight(common);
 
 // --- SUB-COMPONENT: THE GOD-MODE TOOLBAR ---
 const MenuBar = ({ editor }: { editor: any }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fontInputRef = useRef<HTMLInputElement>(null);
+  const [dynamicFonts, setDynamicFonts] = useState<string[]>([]);
 
   if (!editor) return null;
 
@@ -44,6 +72,25 @@ const MenuBar = ({ editor }: { editor: any }) => {
     } catch (error) { console.error("Upload failed:", error); }
   };
 
+  const handleFontUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const safeName = file.name.split('.')[0].replace(/[^a-zA-Z0-9]/g, ' ');
+    const customFontName = window.prompt("Name this custom font for your editor:", safeName);
+
+    if (!customFontName) {
+      if (fontInputRef.current) fontInputRef.current.value = ''; 
+      return;
+    }
+    const fontUrl = URL.createObjectURL(file);
+    const styleNode = document.createElement('style');
+    styleNode.innerHTML = `@font-face { font-family: '${customFontName}'; src: url('${fontUrl}'); }`;
+    document.head.appendChild(styleNode);
+    setDynamicFonts((prev) => [...prev, customFontName]);
+    editor.chain().focus().setFontFamily(customFontName).run();
+    if (fontInputRef.current) fontInputRef.current.value = '';
+  };
+
   const btnClass = (isActive: boolean) => 
     `p-2 rounded-lg transition-all duration-200 flex items-center justify-center w-8 h-8 text-[11px] font-bold ${
       isActive ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50 shadow-[0_0_10px_rgba(59,130,246,0.2)]' : 'bg-transparent text-slate-400 hover:bg-white/10 hover:text-white border border-transparent'
@@ -52,30 +99,58 @@ const MenuBar = ({ editor }: { editor: any }) => {
   return (
     <div className="sticky top-[80px] z-40 bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2 mb-8 flex flex-wrap items-center gap-1 shadow-[0_10px_40px_rgba(0,0,0,0.8)]">
       
-      {/* TIME TRAVEL */}
+      {/* TIME TRAVEL & CLEANUP */}
       <button type="button" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} className={btnClass(false)} title="Undo (Ctrl+Z)">↶</button>
       <button type="button" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} className={btnClass(false)} title="Redo (Ctrl+Y)">↷</button>
-      
+      <button type="button" onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} className="p-2 w-8 h-8 flex items-center justify-center text-red-400 hover:bg-red-500/20 rounded-lg font-bold text-[11px]" title="Clear All Formatting">⌫</button>
+
+      <div className="w-[1px] h-6 bg-white/10 mx-1" />
+
+      {/* DYNAMIC LOCAL FONT ENGINE */}
+      <select 
+        onChange={(e) => editor.chain().focus().setFontFamily(e.target.value).run()}
+        value={editor.getAttributes('textStyle').fontFamily || ''}
+        className="bg-black border border-white/20 text-slate-300 text-[11px] font-bold rounded-lg px-2 py-1.5 focus:outline-none focus:border-blue-500 cursor-pointer appearance-none text-center max-w-[120px] truncate"
+        title="Select Font"
+      >
+        <option value="">System Default</option>
+        <option value="Inter, sans-serif">Inter</option>
+        <option value="ui-serif, Georgia, Cambria, Times New Roman, Times, serif">Serif</option>
+        <option value="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace">Monospace</option>
+        {dynamicFonts.map((font, idx) => (
+          <option key={idx} value={font} style={{ fontFamily: font }}>{font} (Local)</option>
+        ))}
+      </select>
+      <button type="button" onClick={() => fontInputRef.current?.click()} className={btnClass(false)} title="Upload Local Font File (.ttf, .otf)">F↑</button>
+      <input type="file" ref={fontInputRef} onChange={handleFontUpload} className="hidden" accept=".ttf,.otf,.woff,.woff2" />
+
       <div className="w-[1px] h-6 bg-white/10 mx-1" />
 
       {/* HIERARCHY */}
-      <button type="button" onClick={() => editor.chain().focus().setParagraph().run()} className={btnClass(editor.isActive('paragraph'))} title="Paragraph (Normal Text)">P</button>
+      <button type="button" onClick={() => editor.chain().focus().setParagraph().run()} className={btnClass(editor.isActive('paragraph'))} title="Paragraph">P</button>
       <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className={btnClass(editor.isActive('heading', { level: 1 }))} title="Heading 1">H1</button>
       <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={btnClass(editor.isActive('heading', { level: 2 }))} title="Heading 2">H2</button>
       <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={btnClass(editor.isActive('heading', { level: 3 }))} title="Heading 3">H3</button>
-      <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()} className={btnClass(editor.isActive('heading', { level: 4 }))} title="Heading 4">H4</button>
 
       <div className="w-[1px] h-6 bg-white/10 mx-1" />
 
       {/* CORE TYPOGRAPHY */}
-      <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={btnClass(editor.isActive('bold'))} title="Bold (Ctrl+B)">B</button>
-      <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={btnClass(editor.isActive('italic'))} title="Italic (Ctrl+I)"><i className="font-serif">I</i></button>
-      <button type="button" onClick={() => editor.chain().focus().toggleUnderline().run()} className={btnClass(editor.isActive('underline'))} title="Underline (Ctrl+U)"><u className="underline-offset-2">U</u></button>
+      <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={btnClass(editor.isActive('bold'))} title="Bold">B</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={btnClass(editor.isActive('italic'))} title="Italic"><i className="font-serif">I</i></button>
+      <button type="button" onClick={() => editor.chain().focus().toggleUnderline().run()} className={btnClass(editor.isActive('underline'))} title="Underline"><u className="underline-offset-2">U</u></button>
       <button type="button" onClick={() => editor.chain().focus().toggleStrike().run()} className={btnClass(editor.isActive('strike'))} title="Strikethrough"><s>S</s></button>
-      <button type="button" onClick={() => editor.chain().focus().toggleHighlight().run()} className={btnClass(editor.isActive('highlight'))} title="Highlight Text (Marker)">🖍️</button>
       <button type="button" onClick={() => editor.chain().focus().toggleSuperscript().run()} className={btnClass(editor.isActive('superscript'))} title="Superscript">X²</button>
       <button type="button" onClick={() => editor.chain().focus().toggleSubscript().run()} className={btnClass(editor.isActive('subscript'))} title="Subscript">X₂</button>
       
+      {/* COLOR ENGINES: Text Color & Multi-Color Highlight */}
+      <div className="flex items-center bg-white/5 rounded-lg ml-1 px-1 border border-white/5">
+        <input type="color" onInput={(event) => editor.chain().focus().setColor((event.target as HTMLInputElement).value).run()} value={editor.getAttributes('textStyle').color || '#ffffff'} className="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent mx-1" title="Text Color" />
+        <div className="w-[1px] h-4 bg-white/20 mx-1" />
+        <button type="button" onClick={() => editor.chain().focus().toggleHighlight().run()} className={btnClass(editor.isActive('highlight'))} title="Highlight Text">🖍️</button>
+        {/* NEW: Multi-Color Highlight Picker */}
+        <input type="color" onInput={(event) => editor.chain().focus().toggleHighlight({ color: (event.target as HTMLInputElement).value }).run()} className="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent mx-1" title="Pick Highlight Color" />
+      </div>
+
       <div className="w-[1px] h-6 bg-white/10 mx-1" />
       
       {/* ALIGNMENT */}
@@ -91,7 +166,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
       <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={btnClass(editor.isActive('orderedList'))} title="Numbered List">1.</button>
       <button type="button" onClick={() => editor.chain().focus().toggleTaskList().run()} className={btnClass(editor.isActive('taskList'))} title="To-Do List">☑</button>
       <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={btnClass(editor.isActive('blockquote'))} title="Quote Block">""</button>
-      <button type="button" onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={btnClass(editor.isActive('codeBlock'))} title="Code Block">&lt;/&gt;</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={btnClass(editor.isActive('codeBlock'))} title="Intelligent Code Block">&lt;/&gt;</button>
       <button type="button" onClick={() => editor.chain().focus().setHorizontalRule().run()} className={btnClass(false)} title="Divider Line">---</button>
 
       <div className="w-[1px] h-6 bg-white/10 mx-1" />
@@ -114,7 +189,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
 
       <button type="button" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className={btnClass(editor.isActive('table'))} title="Insert Table">📊</button>
       
-      {/* TABLE CONTROLS (Only visible when inside a table) */}
+      {/* TABLE CONTROLS */}
       {editor.isActive('table') && (
         <div className="flex bg-blue-500/10 rounded-lg ml-1 border border-blue-500/20">
           <button type="button" onClick={() => editor.chain().focus().addColumnAfter().run()} className={btnClass(false)} title="Add Column">C+</button>
@@ -152,22 +227,30 @@ export default function IntelligenceEditor() {
   const editor = useEditor({
     immediatelyRender: false, 
     extensions: [
-      StarterKit,
+      StarterKit.configure({ codeBlock: false }), 
+      CodeBlockLowlight.configure({ lowlight }),
       Underline,
       Typography,
       Superscript,
       Subscript,
-      Highlight.configure({ HTMLAttributes: { class: 'bg-yellow-500/30 text-yellow-200 px-1 rounded' } }),
+      TextStyle,
+      Color,
+      FontFamily,
+      CharacterCount,
+      Gapcursor, // FIXED: Eliminates Trapped Cursors around Tables/Videos
+      Dropcursor.configure({ color: '#3b82f6', width: 2 }), // FIXED: Precision Blue Line for Drag & Drop
+      Highlight.configure({ multicolor: true }), // FIXED: Dynamic Background Colors allowed
       TextAlign.configure({ types: ['heading', 'paragraph'], alignments: ['left', 'center', 'right', 'justify'] }),
       TaskList,
       TaskItem.configure({ nested: true }),
       Image.configure({ inline: true, HTMLAttributes: { class: 'rounded-xl border border-white/10 my-8 w-full max-w-full shadow-2xl' } }),
-      LinkExtension.configure({ openOnClick: false, HTMLAttributes: { class: 'text-blue-500 underline hover:text-blue-400 transition-colors cursor-pointer underline-offset-4' } }),
+      // FIXED: Smart Auto-Linking enabled
+      LinkExtension.configure({ openOnClick: false, autolink: true, HTMLAttributes: { class: 'text-blue-500 underline hover:text-blue-400 transition-colors cursor-pointer underline-offset-4' } }), 
       Youtube.configure({ inline: false, HTMLAttributes: { class: 'w-full aspect-video rounded-xl border border-white/10 my-8 shadow-2xl bg-black' } }),
       Table.configure({ resizable: true, HTMLAttributes: { class: 'w-full border-collapse border border-white/20 my-8 text-sm' } }),
       TableRow,
       TableHeader.configure({ HTMLAttributes: { class: 'border border-white/20 bg-white/5 p-3 font-bold text-left text-white' } }),
-      TableCell.configure({ HTMLAttributes: { class: 'border border-white/20 p-3' } }),
+      TableCell.configure({ HTMLAttributes: { class: 'border border-white/20 p-3 relative group' } }),
       Placeholder.configure({ placeholder: "Start drafting... Try typing '# ' for a heading, '* ' for a bullet, or '[ ] ' for a checklist." })
     ],
     content: "",
@@ -176,7 +259,7 @@ export default function IntelligenceEditor() {
     },
     editorProps: {
       attributes: {
-        class: 'prose-none focus:outline-none min-h-[600px] w-full text-slate-300 leading-relaxed text-lg',
+        class: 'prose-none focus:outline-none min-h-[600px] w-full text-slate-300 leading-relaxed text-lg transition-all',
       },
     },
   });
@@ -284,20 +367,23 @@ export default function IntelligenceEditor() {
         .ProseMirror p.is-editor-empty:first-child::before {
           content: attr(data-placeholder); float: left; color: #475569; pointer-events: none; height: 0; font-family: ui-monospace, monospace; font-size: 0.875rem;
         }
-        .ProseMirror * { background-color: transparent !important; font-family: inherit !important; }
+        .ProseMirror * { background-color: transparent !important; }
         
-        .ProseMirror h1 { font-size: 2.5rem; font-weight: 900; color: #fff !important; margin-top: 2.5rem; margin-bottom: 1rem; letter-spacing: -0.025em; line-height: 1.2; }
-        .ProseMirror h2 { font-size: 2rem; font-weight: 800; color: #fff !important; margin-top: 2.5rem; margin-bottom: 1rem; letter-spacing: -0.025em; line-height: 1.3; }
-        .ProseMirror h3 { font-size: 1.5rem; font-weight: 700; color: #fff !important; margin-top: 2rem; margin-bottom: 0.75rem; }
-        .ProseMirror h4 { font-size: 1.25rem; font-weight: 700; color: #fff !important; margin-top: 1.5rem; margin-bottom: 0.5rem; }
-        .ProseMirror p { margin-bottom: 1.5rem; color: #cbd5e1 !important; }
+        .ProseMirror h1 { font-size: 2.5rem; font-weight: 900; margin-top: 2.5rem; margin-bottom: 1rem; letter-spacing: -0.025em; line-height: 1.2; }
+        .ProseMirror h2 { font-size: 2rem; font-weight: 800; margin-top: 2.5rem; margin-bottom: 1rem; letter-spacing: -0.025em; line-height: 1.3; }
+        .ProseMirror h3 { font-size: 1.5rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.75rem; }
+        .ProseMirror h4 { font-size: 1.25rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .ProseMirror p { margin-bottom: 1.5rem; }
+        
+        /* Highlight Overrides */
+        .ProseMirror mark { background-color: inherit !important; color: inherit; border-radius: 0.25rem; padding: 0.1rem 0.2rem; }
         
         .ProseMirror u { text-decoration: underline; text-underline-offset: 4px; }
         .ProseMirror blockquote { border-left: 4px solid #3b82f6; background: rgba(59, 130, 246, 0.05) !important; padding: 1rem 1.5rem; border-radius: 0 0.5rem 0.5rem 0; margin: 2rem 0; color: #94a3b8; font-style: normal; }
         .ProseMirror hr { border-color: rgba(255,255,255,0.1); margin: 3rem 0; }
         
-        .ProseMirror ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1.5rem; color: #cbd5e1; }
-        .ProseMirror ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1.5rem; color: #cbd5e1; }
+        .ProseMirror ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1.5rem; }
+        .ProseMirror ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1.5rem; }
         .ProseMirror li { margin-bottom: 0.5rem; }
         
         ul[data-type="taskList"] { list-style: none; padding: 0; }
@@ -309,15 +395,23 @@ export default function IntelligenceEditor() {
         .ProseMirror a { color: #3b82f6 !important; text-decoration: underline !important; font-weight: 600; cursor: pointer; }
         .ProseMirror a:hover { color: #60a5fa !important; }
         
-        .ProseMirror pre, .ProseMirror pre * { background-color: #0f172a !important; color: #e2e8f0 !important; }
-        .ProseMirror pre { padding: 1.5rem !important; border-radius: 0.75rem !important; border: 1px solid rgba(255,255,255,0.1); overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important; font-size: 0.875rem !important; margin: 2rem 0; }
-        .ProseMirror code { font-family: ui-monospace, monospace !important; background: rgba(255,255,255,0.1) !important; padding: 0.2rem 0.4rem !important; border-radius: 0.25rem !important; font-size: 0.875em; color: #93c5fd !important; }
+        /* Gapcursor & Dropcursor */
+        .ProseMirror-gapcursor { display: none; pointer-events: none; position: absolute; }
+        .ProseMirror-gapcursor:after { content: ""; display: block; position: absolute; top: -2px; width: 20px; border-top: 2px solid #3b82f6; animation: ProseMirror-cursor-blink 1.1s steps(2, start) infinite; }
+        @keyframes ProseMirror-cursor-blink { to { visibility: hidden; } }
+        .ProseMirror:focus .ProseMirror-gapcursor { display: block; }
         
-        /* Table Styles */
-        .ProseMirror table { width: 100%; border-collapse: collapse; margin: 2rem 0; table-layout: fixed; }
-        .ProseMirror th, .ProseMirror td { border: 1px solid rgba(255,255,255,0.2); padding: 0.75rem; vertical-align: top; }
-        .ProseMirror th { background-color: rgba(255,255,255,0.05); font-weight: bold; text-align: left; color: white; }
+        /* Advanced Syntax Highlighting Styles */
+        .ProseMirror pre { background: #0d1117 !important; color: #c9d1d9 !important; padding: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.1); font-family: ui-monospace, SFMono-Regular, Consolas, monospace !important; margin: 2rem 0; overflow-x: auto; }
+        .ProseMirror pre code { background: none !important; padding: 0 !important; font-size: 0.875rem !important; color: inherit !important; }
+        .ProseMirror p code { font-family: ui-monospace, monospace !important; background: rgba(255,255,255,0.1) !important; padding: 0.2rem 0.4rem !important; border-radius: 0.25rem !important; font-size: 0.875em; color: #93c5fd !important; }
+        
+        /* Elite Table Styles */
+        .ProseMirror table { width: 100%; border-collapse: collapse; margin: 2rem 0; table-layout: fixed; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .ProseMirror th, .ProseMirror td { border: 1px solid rgba(255,255,255,0.1); padding: 0.75rem; vertical-align: top; position: relative; }
+        .ProseMirror th { background-color: rgba(255,255,255,0.05); font-weight: bold; text-align: left; }
         .ProseMirror .selectedCell:after { z-index: 2; position: absolute; content: ""; left: 0; right: 0; top: 0; bottom: 0; background: rgba(59, 130, 246, 0.2); pointer-events: none; }
+        .ProseMirror .column-resize-handle { position: absolute; right: -2px; top: 0; bottom: -2px; width: 4px; background-color: #3b82f6; pointer-events: none; z-index: 20; }
       `}} />
 
       <div className="fixed inset-0 pointer-events-none z-0">
@@ -417,15 +511,44 @@ export default function IntelligenceEditor() {
           <div className="pb-12">
             <div className="flex justify-between items-end mb-3 ml-1">
               <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500">Main Content Body</label>
-              <span className="text-[9px] font-mono text-emerald-500/40 italic">Type '/' or '#' for Markdown Commands...</span>
+              <span className="text-[9px] font-mono text-emerald-500/40 italic">Try Markdown: '# ' (H1) or '[ ] ' (Task List)...</span>
             </div>
             
             {/* THE TIPTAP CONTENT ENGINE */}
-            <div className="relative z-20 shadow-2xl rounded-xl bg-[#050505] border border-white/10 p-2 min-h-[600px]">
+            <div className="relative z-20 shadow-2xl rounded-xl bg-[#050505] border border-white/10 p-2 min-h-[600px] flex flex-col">
               <MenuBar editor={editor} />
-              <div className="px-6 py-4">
+              
+              {/* THE CONTEXTUAL BUBBLE MENU */}
+              {editor && (
+                // @ts-ignore
+                <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }} className="bg-[#0f172a] border border-white/20 shadow-2xl rounded-lg p-1 flex gap-1 items-center z-50">
+                  <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`p-1.5 rounded hover:bg-white/10 ${editor.isActive('bold') ? 'text-blue-400' : 'text-slate-300'}`}><b>B</b></button>
+                  <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={`p-1.5 rounded hover:bg-white/10 ${editor.isActive('italic') ? 'text-blue-400' : 'text-slate-300'}`}><i>I</i></button>
+                  <button type="button" onClick={() => editor.chain().focus().toggleUnderline().run()} className={`p-1.5 rounded hover:bg-white/10 ${editor.isActive('underline') ? 'text-blue-400' : 'text-slate-300'}`}><u>U</u></button>
+                  <div className="w-[1px] h-4 bg-white/20 mx-1"></div>
+                  <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`p-1.5 rounded hover:bg-white/10 text-xs font-bold ${editor.isActive('heading', { level: 2 }) ? 'text-blue-400' : 'text-slate-300'}`}>H2</button>
+                  <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={`p-1.5 rounded hover:bg-white/10 text-xs font-bold ${editor.isActive('heading', { level: 3 }) ? 'text-blue-400' : 'text-slate-300'}`}>H3</button>
+                  <div className="w-[1px] h-4 bg-white/20 mx-1"></div>
+                  <button type="button" onClick={() => {
+                    const url = window.prompt('Link URL:');
+                    if (url) editor.chain().focus().setLink({ href: url }).run();
+                  }} className={`p-1.5 rounded hover:bg-white/10 text-xs ${editor.isActive('link') ? 'text-blue-400' : 'text-slate-300'}`}>🔗</button>
+                </BubbleMenu>
+              )}
+
+              <div className="px-6 py-4 flex-1">
                 <EditorContent editor={editor} />
               </div>
+
+              {/* LIVE TELEMETRY FOOTER */}
+              <div className="mt-auto border-t border-white/5 pt-3 pb-1 px-4 flex justify-between items-center text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+                <span>Data Processed</span>
+                <div className="flex gap-4">
+                  <span>{editor?.storage.characterCount.words()} Words</span>
+                  <span>{editor?.storage.characterCount.characters()} Characters</span>
+                </div>
+              </div>
+
             </div>
 
           </div>
