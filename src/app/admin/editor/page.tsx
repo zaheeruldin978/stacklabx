@@ -1,73 +1,208 @@
 "use client";
 
-import { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { publishArticle } from "../../actions/publish";
-import "react-quill-new/dist/quill.snow.css"; 
 import SEOAnalyzer from "@/components/SEOAnalyzer";
 
-const ReactQuill = dynamic(() => import("react-quill-new"), { 
-  ssr: false,
-  loading: () => (
-    <div className="h-64 w-full bg-white/5 animate-pulse rounded-lg flex items-center justify-center text-slate-500 font-mono text-xs">
-      SYNCHRONIZING RICH TEXT ENGINE...
+// 1. IMPORT THE TIPTAP ENTERPRISE ENGINE & ULTIMATE EXTENSIONS
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Image from '@tiptap/extension-image';
+import LinkExtension from '@tiptap/extension-link';
+import Placeholder from '@tiptap/extension-placeholder';
+import Underline from '@tiptap/extension-underline';
+import TextAlign from '@tiptap/extension-text-align';
+import Highlight from '@tiptap/extension-highlight';
+import TaskItem from '@tiptap/extension-task-item';
+import TaskList from '@tiptap/extension-task-list';
+import Typography from '@tiptap/extension-typography';
+import Superscript from '@tiptap/extension-superscript';
+import Subscript from '@tiptap/extension-subscript';
+import Youtube from '@tiptap/extension-youtube';
+import { Table } from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
+
+// --- SUB-COMPONENT: THE GOD-MODE TOOLBAR ---
+const MenuBar = ({ editor }: { editor: any }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  if (!editor) return null;
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.success && data.url) editor.chain().focus().setImage({ src: data.url }).run();
+    } catch (error) { console.error("Upload failed:", error); }
+  };
+
+  const btnClass = (isActive: boolean) => 
+    `p-2 rounded-lg transition-all duration-200 flex items-center justify-center w-8 h-8 text-[11px] font-bold ${
+      isActive ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50 shadow-[0_0_10px_rgba(59,130,246,0.2)]' : 'bg-transparent text-slate-400 hover:bg-white/10 hover:text-white border border-transparent'
+    }`;
+
+  return (
+    <div className="sticky top-[80px] z-40 bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2 mb-8 flex flex-wrap items-center gap-1 shadow-[0_10px_40px_rgba(0,0,0,0.8)]">
+      
+      {/* TIME TRAVEL */}
+      <button type="button" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} className={btnClass(false)} title="Undo (Ctrl+Z)">↶</button>
+      <button type="button" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} className={btnClass(false)} title="Redo (Ctrl+Y)">↷</button>
+      
+      <div className="w-[1px] h-6 bg-white/10 mx-1" />
+
+      {/* HIERARCHY */}
+      <button type="button" onClick={() => editor.chain().focus().setParagraph().run()} className={btnClass(editor.isActive('paragraph'))} title="Paragraph (Normal Text)">P</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className={btnClass(editor.isActive('heading', { level: 1 }))} title="Heading 1">H1</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={btnClass(editor.isActive('heading', { level: 2 }))} title="Heading 2">H2</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={btnClass(editor.isActive('heading', { level: 3 }))} title="Heading 3">H3</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()} className={btnClass(editor.isActive('heading', { level: 4 }))} title="Heading 4">H4</button>
+
+      <div className="w-[1px] h-6 bg-white/10 mx-1" />
+
+      {/* CORE TYPOGRAPHY */}
+      <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={btnClass(editor.isActive('bold'))} title="Bold (Ctrl+B)">B</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={btnClass(editor.isActive('italic'))} title="Italic (Ctrl+I)"><i className="font-serif">I</i></button>
+      <button type="button" onClick={() => editor.chain().focus().toggleUnderline().run()} className={btnClass(editor.isActive('underline'))} title="Underline (Ctrl+U)"><u className="underline-offset-2">U</u></button>
+      <button type="button" onClick={() => editor.chain().focus().toggleStrike().run()} className={btnClass(editor.isActive('strike'))} title="Strikethrough"><s>S</s></button>
+      <button type="button" onClick={() => editor.chain().focus().toggleHighlight().run()} className={btnClass(editor.isActive('highlight'))} title="Highlight Text (Marker)">🖍️</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleSuperscript().run()} className={btnClass(editor.isActive('superscript'))} title="Superscript">X²</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleSubscript().run()} className={btnClass(editor.isActive('subscript'))} title="Subscript">X₂</button>
+      
+      <div className="w-[1px] h-6 bg-white/10 mx-1" />
+      
+      {/* ALIGNMENT */}
+      <button type="button" onClick={() => editor.chain().focus().setTextAlign('left').run()} className={btnClass(editor.isActive({ textAlign: 'left' }))} title="Align Left">⇤</button>
+      <button type="button" onClick={() => editor.chain().focus().setTextAlign('center').run()} className={btnClass(editor.isActive({ textAlign: 'center' }))} title="Align Center">⇹</button>
+      <button type="button" onClick={() => editor.chain().focus().setTextAlign('right').run()} className={btnClass(editor.isActive({ textAlign: 'right' }))} title="Align Right">⇥</button>
+      <button type="button" onClick={() => editor.chain().focus().setTextAlign('justify').run()} className={btnClass(editor.isActive({ textAlign: 'justify' }))} title="Justify">≡</button>
+
+      <div className="w-[1px] h-6 bg-white/10 mx-1" />
+      
+      {/* STRUCTURAL BLOCKS */}
+      <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={btnClass(editor.isActive('bulletList'))} title="Bullet List">•</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={btnClass(editor.isActive('orderedList'))} title="Numbered List">1.</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleTaskList().run()} className={btnClass(editor.isActive('taskList'))} title="To-Do List">☑</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={btnClass(editor.isActive('blockquote'))} title="Quote Block">""</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={btnClass(editor.isActive('codeBlock'))} title="Code Block">&lt;/&gt;</button>
+      <button type="button" onClick={() => editor.chain().focus().setHorizontalRule().run()} className={btnClass(false)} title="Divider Line">---</button>
+
+      <div className="w-[1px] h-6 bg-white/10 mx-1" />
+
+      {/* MEDIA, LINKS, & TABLES */}
+      <button type="button" onClick={() => {
+          const url = window.prompt('Enter URL:');
+          if (url) editor.chain().focus().setLink({ href: url }).run();
+        }} 
+        className={btnClass(editor.isActive('link'))} title="Insert Link">🔗</button>
+      
+      <button type="button" onClick={() => fileInputRef.current?.click()} className={btnClass(false)} title="Upload Inline Image">🖼️</button>
+      <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
+
+      <button type="button" onClick={() => {
+          const url = window.prompt('Enter YouTube URL:');
+          if (url) editor.chain().focus().setYoutubeVideo({ src: url }).run();
+        }} 
+        className={btnClass(editor.isActive('youtube'))} title="Embed YouTube Video">▶️</button>
+
+      <button type="button" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className={btnClass(editor.isActive('table'))} title="Insert Table">📊</button>
+      
+      {/* TABLE CONTROLS (Only visible when inside a table) */}
+      {editor.isActive('table') && (
+        <div className="flex bg-blue-500/10 rounded-lg ml-1 border border-blue-500/20">
+          <button type="button" onClick={() => editor.chain().focus().addColumnAfter().run()} className={btnClass(false)} title="Add Column">C+</button>
+          <button type="button" onClick={() => editor.chain().focus().addRowAfter().run()} className={btnClass(false)} title="Add Row">R+</button>
+          <button type="button" onClick={() => editor.chain().focus().deleteTable().run()} className="p-2 w-8 h-8 flex items-center justify-center text-red-400 hover:bg-red-500/20 rounded-lg font-bold text-[11px]" title="Delete Table">✕</button>
+        </div>
+      )}
     </div>
-  )
-}) as React.ComponentType<any>;
+  );
+};
 
 export default function IntelligenceEditor() {
+  const router = useRouter();
   const [isPublishing, setIsPublishing] = useState(false);
   const [status, setStatus] = useState<{ type: 'error' | 'success' | null, msg: string }>({ type: null, msg: "" });
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [lastAutoSave, setLastAutoSave] = useState<string | null>(null);
 
-  // --- CORE CONTENT STATE ---
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [content, setContent] = useState("");
   
-  // --- ASSET PIPELINE STATE ---
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // --- QUILL REFERENCE FOR CUSTOM INJECTION ---
-  const quillRef = useRef<any>(null);
 
-  // --- TAXONOMY & PUBLISHING STATE ---
   const [category, setCategory] = useState("Cloud Architecture");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [visibility, setVisibility] = useState("PUBLIC");
   const [publishedAt, setPublishedAt] = useState("");
 
-  // ==========================================
-  // AUTO-SAVE PROTOCOL (LOCAL STORAGE)
-  // ==========================================
+  const editor = useEditor({
+    immediatelyRender: false, 
+    extensions: [
+      StarterKit,
+      Underline,
+      Typography,
+      Superscript,
+      Subscript,
+      Highlight.configure({ HTMLAttributes: { class: 'bg-yellow-500/30 text-yellow-200 px-1 rounded' } }),
+      TextAlign.configure({ types: ['heading', 'paragraph'], alignments: ['left', 'center', 'right', 'justify'] }),
+      TaskList,
+      TaskItem.configure({ nested: true }),
+      Image.configure({ inline: true, HTMLAttributes: { class: 'rounded-xl border border-white/10 my-8 w-full max-w-full shadow-2xl' } }),
+      LinkExtension.configure({ openOnClick: false, HTMLAttributes: { class: 'text-blue-500 underline hover:text-blue-400 transition-colors cursor-pointer underline-offset-4' } }),
+      Youtube.configure({ inline: false, HTMLAttributes: { class: 'w-full aspect-video rounded-xl border border-white/10 my-8 shadow-2xl bg-black' } }),
+      Table.configure({ resizable: true, HTMLAttributes: { class: 'w-full border-collapse border border-white/20 my-8 text-sm' } }),
+      TableRow,
+      TableHeader.configure({ HTMLAttributes: { class: 'border border-white/20 bg-white/5 p-3 font-bold text-left text-white' } }),
+      TableCell.configure({ HTMLAttributes: { class: 'border border-white/20 p-3' } }),
+      Placeholder.configure({ placeholder: "Start drafting... Try typing '# ' for a heading, '* ' for a bullet, or '[ ] ' for a checklist." })
+    ],
+    content: "",
+    onUpdate: ({ editor }) => {
+      setContent(editor.getHTML());
+    },
+    editorProps: {
+      attributes: {
+        class: 'prose-none focus:outline-none min-h-[600px] w-full text-slate-300 leading-relaxed text-lg',
+      },
+    },
+  });
+
   useEffect(() => {
-    // Restore on load
     const savedDraft = localStorage.getItem("stacklabx_editor_backup");
-    if (savedDraft && !title && !content) {
+    if (savedDraft && !title && !content && editor) {
       try {
         const parsed = JSON.parse(savedDraft);
         if (confirm("We found an unsaved backup of an article. Restore it?")) {
           setTitle(parsed.title || "");
           setSlug(parsed.slug || "");
-          setContent(parsed.content || "");
           setExcerpt(parsed.excerpt || "");
           setTags(parsed.tags || []);
+          const restoredContent = parsed.content || "";
+          setContent(restoredContent);
+          editor.commands.setContent(restoredContent);
         } else {
           localStorage.removeItem("stacklabx_editor_backup");
         }
       } catch (e) { console.error("Backup parse failed"); }
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor]);
 
   useEffect(() => {
-    // Save every 15 seconds if content exists
     const autoSaveTimer = setInterval(() => {
       if (title || content) {
         localStorage.setItem("stacklabx_editor_backup", JSON.stringify({ title, slug, excerpt, content, tags }));
@@ -78,61 +213,6 @@ export default function IntelligenceEditor() {
     return () => clearInterval(autoSaveTimer);
   }, [title, slug, excerpt, content, tags]);
 
-  // ==========================================
-  // CUSTOM QUILL INLINE IMAGE HANDLER (Base64 Killer)
-  // ==========================================
-  const imageHandler = useCallback(() => {
-    const input = document.createElement("input");
-    input.setAttribute("type", "file");
-    input.setAttribute("accept", "image/*");
-    input.click();
-
-    input.onchange = async () => {
-      const file = input.files ? input.files[0] : null;
-      if (!file) return;
-
-      setIsUploading(true);
-      const formData = new FormData();
-      formData.append("file", file);
-
-      try {
-        const res = await fetch("/api/upload", { method: "POST", body: formData });
-        const data = await res.json();
-
-        if (data.success) {
-          const quill = quillRef.current.getEditor();
-          const range = quill.getSelection(true);
-          // Inject the clean URL into the editor instead of Base64
-          quill.insertEmbed(range.index, "image", data.url);
-          quill.setSelection(range.index + 1);
-        } else {
-          alert("Inline image upload failed: " + data.error);
-        }
-      } catch (error) {
-        alert("System error during inline image upload.");
-      } finally {
-        setIsUploading(false);
-      }
-    };
-  }, []);
-
-  // Modules must be memoized in ReactQuill so the editor doesn't lose focus while typing
-  const modules = useMemo(() => ({
-    toolbar: {
-      container: [
-        [{ 'header': [1, 2, 3, 4, false] }], 
-        ['bold', 'italic', 'underline', 'strike'], 
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }], 
-        ['link', 'image', 'blockquote', 'code-block'], // <-- Image button active
-        ['clean'] 
-      ],
-      handlers: {
-        image: imageHandler // <-- Binds our custom API uploader
-      }
-    }
-  }), [imageHandler]);
-
-  // --- HERO IMAGE HANDLERS ---
   const handleFileUpload = async (file: File) => {
     if (!file) return;
     setIsUploading(true);
@@ -186,7 +266,8 @@ export default function IntelligenceEditor() {
       if (actionType === "publish") {
         (e.target as HTMLFormElement).reset(); 
         setTitle(""); setSlug(""); setExcerpt(""); setContent(""); setImageUrl(""); setTags([]);
-        localStorage.removeItem("stacklabx_editor_backup"); // Clear backup on successful publish
+        if (editor) editor.commands.clearContent();
+        localStorage.removeItem("stacklabx_editor_backup");
       }
       setIsDrawerOpen(false); 
     } else {
@@ -198,16 +279,45 @@ export default function IntelligenceEditor() {
   return (
     <main className="min-h-screen bg-[#000000] text-white pt-16 pb-32 selection:bg-blue-500/30 font-sans relative overflow-x-hidden">
       
+      {/* TIPTAP CORE STYLES & AGGRESSIVE SANITIZATION */}
       <style dangerouslySetInnerHTML={{__html: `
-        .ql-toolbar { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1) !important; border-top-left-radius: 0.75rem; border-top-right-radius: 0.75rem; padding: 12px !important; }
-        .ql-container { border: 1px solid rgba(255,255,255,0.1) !important; border-bottom-left-radius: 0.75rem; border-bottom-right-radius: 0.75rem; background: rgba(5,5,5,1); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 1.1rem; }
-        .ql-editor { min-height: 600px; color: #cbd5e1; padding: 2rem !important; line-height: 1.8; }
-        .ql-editor h1, .ql-editor h2, .ql-editor h3 { color: #fff; font-weight: 900; margin-top: 2rem; margin-bottom: 1rem; }
-        .ql-editor a { color: #3b82f6; text-decoration: underline; text-underline-offset: 4px; }
-        .ql-editor blockquote { border-left: 4px solid #3b82f6; background: rgba(59, 130, 246, 0.05); color: #94a3b8; padding: 1rem 1.5rem; border-radius: 0 0.5rem 0.5rem 0; }
-        .ql-snow .ql-stroke { stroke: #cbd5e1; }
-        .ql-snow .ql-fill, .ql-snow .ql-stroke.ql-fill { fill: #cbd5e1; }
-        .ql-snow .ql-picker { color: #cbd5e1; font-weight: bold; }
+        .ProseMirror p.is-editor-empty:first-child::before {
+          content: attr(data-placeholder); float: left; color: #475569; pointer-events: none; height: 0; font-family: ui-monospace, monospace; font-size: 0.875rem;
+        }
+        .ProseMirror * { background-color: transparent !important; font-family: inherit !important; }
+        
+        .ProseMirror h1 { font-size: 2.5rem; font-weight: 900; color: #fff !important; margin-top: 2.5rem; margin-bottom: 1rem; letter-spacing: -0.025em; line-height: 1.2; }
+        .ProseMirror h2 { font-size: 2rem; font-weight: 800; color: #fff !important; margin-top: 2.5rem; margin-bottom: 1rem; letter-spacing: -0.025em; line-height: 1.3; }
+        .ProseMirror h3 { font-size: 1.5rem; font-weight: 700; color: #fff !important; margin-top: 2rem; margin-bottom: 0.75rem; }
+        .ProseMirror h4 { font-size: 1.25rem; font-weight: 700; color: #fff !important; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .ProseMirror p { margin-bottom: 1.5rem; color: #cbd5e1 !important; }
+        
+        .ProseMirror u { text-decoration: underline; text-underline-offset: 4px; }
+        .ProseMirror blockquote { border-left: 4px solid #3b82f6; background: rgba(59, 130, 246, 0.05) !important; padding: 1rem 1.5rem; border-radius: 0 0.5rem 0.5rem 0; margin: 2rem 0; color: #94a3b8; font-style: normal; }
+        .ProseMirror hr { border-color: rgba(255,255,255,0.1); margin: 3rem 0; }
+        
+        .ProseMirror ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1.5rem; color: #cbd5e1; }
+        .ProseMirror ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1.5rem; color: #cbd5e1; }
+        .ProseMirror li { margin-bottom: 0.5rem; }
+        
+        ul[data-type="taskList"] { list-style: none; padding: 0; }
+        ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.5rem; }
+        ul[data-type="taskList"] li > label { margin-top: 0.3rem; display: flex; }
+        ul[data-type="taskList"] li > label > input { accent-color: #3b82f6; width: 1.1rem; height: 1.1rem; cursor: pointer; }
+        ul[data-type="taskList"] li > div { flex: 1 1 auto; }
+        
+        .ProseMirror a { color: #3b82f6 !important; text-decoration: underline !important; font-weight: 600; cursor: pointer; }
+        .ProseMirror a:hover { color: #60a5fa !important; }
+        
+        .ProseMirror pre, .ProseMirror pre * { background-color: #0f172a !important; color: #e2e8f0 !important; }
+        .ProseMirror pre { padding: 1.5rem !important; border-radius: 0.75rem !important; border: 1px solid rgba(255,255,255,0.1); overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important; font-size: 0.875rem !important; margin: 2rem 0; }
+        .ProseMirror code { font-family: ui-monospace, monospace !important; background: rgba(255,255,255,0.1) !important; padding: 0.2rem 0.4rem !important; border-radius: 0.25rem !important; font-size: 0.875em; color: #93c5fd !important; }
+        
+        /* Table Styles */
+        .ProseMirror table { width: 100%; border-collapse: collapse; margin: 2rem 0; table-layout: fixed; }
+        .ProseMirror th, .ProseMirror td { border: 1px solid rgba(255,255,255,0.2); padding: 0.75rem; vertical-align: top; }
+        .ProseMirror th { background-color: rgba(255,255,255,0.05); font-weight: bold; text-align: left; color: white; }
+        .ProseMirror .selectedCell:after { z-index: 2; position: absolute; content: ""; left: 0; right: 0; top: 0; bottom: 0; background: rgba(59, 130, 246, 0.2); pointer-events: none; }
       `}} />
 
       <div className="fixed inset-0 pointer-events-none z-0">
@@ -226,7 +336,7 @@ export default function IntelligenceEditor() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500"></span>
               </span>
-              <p className="text-[10px] font-mono tracking-[0.2em] text-blue-400 uppercase">Focus Mode Active</p>
+              <p className="text-[10px] font-mono tracking-[0.2em] text-blue-400 uppercase">Prosemirror God-Mode Active</p>
             </div>
             {/* Auto-Save Telemetry UI */}
             {lastAutoSave && (
@@ -307,11 +417,17 @@ export default function IntelligenceEditor() {
           <div className="pb-12">
             <div className="flex justify-between items-end mb-3 ml-1">
               <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500">Main Content Body</label>
+              <span className="text-[9px] font-mono text-emerald-500/40 italic">Type '/' or '#' for Markdown Commands...</span>
             </div>
-            <div className="relative z-20 shadow-2xl rounded-xl overflow-hidden bg-[#050505]">
-              {/* Notice the added ref={quillRef} to attach our custom image handler */}
-              <ReactQuill ref={quillRef} theme="snow" value={content} onChange={setContent} modules={modules} placeholder="Initialize core thesis here..."/>
+            
+            {/* THE TIPTAP CONTENT ENGINE */}
+            <div className="relative z-20 shadow-2xl rounded-xl bg-[#050505] border border-white/10 p-2 min-h-[600px]">
+              <MenuBar editor={editor} />
+              <div className="px-6 py-4">
+                <EditorContent editor={editor} />
+              </div>
             </div>
+
           </div>
         </form>
       </div>

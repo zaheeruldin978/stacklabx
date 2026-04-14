@@ -69,7 +69,17 @@ export default function SEOAnalyzer({ title = "", excerpt = "", content = "", sl
     const safeExcerpt = excerpt || "";
     const safeSlug = slug || "";
     
-    const plainText = safeContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(); 
+    // ==========================================
+    // THE FIX: Advanced Text Normalization
+    // Convert HTML &nbsp; to real spaces so the word counter works perfectly
+    // ==========================================
+    const plainText = safeContent
+      .replace(/<[^>]+>/g, ' ')         // Strip all HTML tags
+      .replace(/&nbsp;/gi, ' ')         // Convert non-breaking spaces to real spaces
+      .replace(/&[#A-Za-z0-9]+;/gi, '') // Remove stray HTML entities
+      .replace(/\s+/g, ' ')             // Collapse whitespace into single spaces
+      .trim(); 
+
     const words = plainText.split(/\s+/).filter((w) => w.length > 0);
     const wCount = words.length;
     
