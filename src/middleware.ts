@@ -1,37 +1,48 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(req: NextRequest) {
-  // 1. Only run this check if the user is trying to access the /admin folder
-  if (req.nextUrl.pathname.startsWith('/admin')) {
-    
-    // 2. Look for the authorization header
-    const basicAuth = req.headers.get('authorization');
-    
-    if (basicAuth) {
-      const authValue = basicAuth.split(' ')[1];
-      const [user, pwd] = atob(authValue).split(':');
+export function middleware(request: NextRequest) {
+  // Get the path the user is trying to access
+  const path = request.nextUrl.pathname;
 
-      // 3. Check against your secure .env variables
-      if (user === process.env.ADMIN_USERNAME && pwd === process.env.ADMIN_PASSWORD) {
-        return NextResponse.next(); // Access Granted
-      }
+  // 1. IS THIS AN ADMIN ROUTE? Check if path starts with /admin
+  const isAdminRoute = path.startsWith('/admin');
+
+  if (isAdminRoute) {
+    // 2. CHECK FOR THE SECURITY KEY (COOKIE)
+    const sessionCookie = request.cookies.get('stacklabx_session');
+
+    // 3. VALIDATION
+    // If no cookie, OR the cookie value doesn't exactly match our .env secret
+    if (!sessionCookie || sessionCookie.value !== process.env.ADMIN_SESSION_SECRET) {
+      
+      // CREATE REDIRECT URL TO LOGIN
+      const loginUrl = new URL('/login', request.url);
+      
+      // Save where they were trying to go so we can bounce them back later
+      loginUrl.searchParams.set('from', path);
+      
+      // FIRE REDIRECT (This bounces them instantly to /login)
+      return NextResponse.redirect(loginUrl);
     }
-
-    // 4. Access Denied - Trigger the browser's native login popup
-    return new NextResponse('Authentication Required', {
-      status: 401,
-      headers: {
-        'WWW-Authenticate': 'Basic realm="StacklabX Secure Nerve Center"',
-      },
-    });
   }
 
-  // Allow access to all other public pages (Home, Services, Academy)
+  // 4. ALLOW PASS-THROUGH
+  // If it's not an admin route, or if they passed the validation, let them in.
   return NextResponse.next();
 }
 
-// 5. Configure the middleware to only protect specific routes
+// 5. CONFIGURATION
+// This ensures Next.js runs this script for every request so the logic above works flawlessly.
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
 };

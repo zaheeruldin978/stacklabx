@@ -4,11 +4,10 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ==========================================
-// THE UNIFIED ENTERPRISE LEAD ENGINE
+// 1. THE UNIFIED ENTERPRISE LEAD ENGINE
 // ==========================================
 model Lead {
   id           String   @id @default(uuid())
@@ -36,7 +35,7 @@ model Lead {
 }
 
 // ==========================================
-// ACADEMY & CONTENT MODELS
+// 2. ACADEMY & IDENTITY MODELS
 // ==========================================
 model User {
   id        String   @id @default(uuid())
@@ -51,22 +50,85 @@ enum Role {
   ADMIN
 }
 
-model Post {
-  // ... keep other fields ...
-  categoryId  String?
-  category    Category? @relation(fields: [categoryId], references: [id])
-}
-
+// ==========================================
+// 3. THE TAXONOMY ENGINE (CATEGORIES & TAGS)
+// ==========================================
 model Category {
-  id        String     @id @default(cuid())
-  name      String     @unique
-  slug      String     @unique
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?    @db.Text
   
   // Self-relation for Subcategories
-  parentId  String?
-  parent    Category?  @relation("SubCategories", fields: [parentId], references: [id])
-  children  Category[] @relation("SubCategories")
+  parentId    String?
+  parent      Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children    Category[] @relation("SubCategories")
   
-  posts     Post[]
-  createdAt DateTime   @default(now())
+  posts       Post[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt @default(now())
+}
+
+model Tag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  
+  posts       Post[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt @default(now())
+}
+
+// ==========================================
+// 4. THE CORE CONTENT ENGINE
+// ==========================================
+model Post {
+  id          String   @id @default(cuid())
+  
+  // Ghost column preserved to prevent migration drift
+  wpId        String?  @unique 
+  
+  title       String
+  slug        String   @unique
+  excerpt     String?  @db.Text
+  content     String   @db.Text
+  imageUrl    String?
+  
+  status      String   @default("DRAFT") // DRAFT, PUBLISHED, ARCHIVED
+  visibility  String   @default("PUBLIC") 
+  isDeleted   Boolean  @default(false)
+  
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt @default(now())
+
+  // Relational Links
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  tags        Tag[]
+
+  @@index([slug])
+  @@index([categoryId])
+}
+
+// ==========================================
+// 5. DYNAMIC CMS ARCHITECTURE
+// ==========================================
+model NavigationMenu {
+  id          String   @id @default(cuid())
+  name        String   @unique 
+  items       Json     
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt @default(now())
+}
+
+model SiteSettings {
+  id          String   @id @default(cuid()) 
+  siteName    String   @default("Stacklabx")
+  description String?  @db.Text
+  logoUrl     String?
+  socialLinks Json?    
+  updatedAt   DateTime @updatedAt @default(now())
 }
