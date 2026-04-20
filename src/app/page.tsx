@@ -56,8 +56,117 @@ const AnimatedText = ({ text, className = "" }: { text: string, className?: stri
   );
 };
 
-// --- 3. VIBRANT INTERACTIVE BENTO CARD ---
-function VibrantCard({ title, desc, icon, colorGradient, borderHover }: { title: string, desc: string, icon: ReactNode, colorGradient: string, borderHover: string }) {
+// --- 3. PREMIUM ANIMATED GRID BACKGROUND (For Lower Sections) ---
+const AnimatedGridBackground = () => (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+    <div className="absolute inset-0 bg-[#020308] z-0"></div>
+    <div className="absolute inset-0 opacity-[0.03] z-10" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px)', backgroundSize: '40px 100%' }}></div>
+    <motion.div 
+      animate={{ y: [0, 40] }} 
+      transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+      className="absolute inset-0 opacity-[0.03] z-10 h-[200%]" 
+      style={{ backgroundImage: 'linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '100% 40px' }}
+    />
+    <div className="absolute inset-0 bg-gradient-to-b from-[#020308] via-transparent to-[#020308] z-20"></div>
+    <div className="absolute inset-0 bg-gradient-to-r from-[#020308] via-transparent to-[#020308] z-20"></div>
+  </div>
+);
+
+// --- NEW: THE QUANTUM DATA MESH BACKGROUND (Stunning Visuals) ---
+const BreathtakingHeroBackground = () => {
+  // 40 Glowing Nodes
+  const nodes = Array.from({ length: 40 }).map((_, i) => ({
+    id: i,
+    size: (i % 3) === 0 ? 5 : (i % 2) === 0 ? 2 : 4,
+    x: (i * 23) % 100, 
+    y: (i * 17) % 100, 
+    duration: (i % 5) + 12, 
+    delay: (i % 10) * -1, 
+    isFuchsia: i % 4 === 0 // 25% of nodes are Fuchsia/Purple for beautiful contrast
+  }));
+
+  // 12 Diagonal Shooting Data Streams
+  const streams = Array.from({ length: 12 }).map((_, i) => ({
+    id: i,
+    top: (i * 13) % 120 - 10, // Spread across height
+    duration: (i % 3) + 2.5, // Fast moving
+    delay: (i % 8) * 1.5, // Staggered starts
+  }));
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 flex items-center justify-center">
+      
+      {/* 1. Deep Space Aurora (Slow breathing background glow) */}
+      <motion.div
+        animate={{ rotate: 360, scale: [1, 1.2, 1], opacity: [0.15, 0.3, 0.15] }}
+        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+        className="absolute w-[70vw] h-[70vh] max-w-[900px] bg-gradient-to-tr from-cyan-600/30 to-blue-800/30 blur-[130px] rounded-full mix-blend-screen"
+      />
+      <motion.div
+        animate={{ rotate: -360, scale: [1, 1.4, 1], opacity: [0.1, 0.25, 0.1] }}
+        transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+        className="absolute w-[60vw] h-[60vh] max-w-[800px] bg-gradient-to-bl from-indigo-600/20 to-purple-800/20 blur-[150px] rounded-full mix-blend-screen"
+      />
+
+      {/* 2. Diagonal Data Streams Wrapper */}
+      <div className="absolute inset-0 rotate-[-35deg] scale-150">
+        {streams.map((s) => (
+          <motion.div
+            key={`stream-${s.id}`}
+            className="absolute h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_rgba(6,182,212,0.8)]"
+            style={{
+              top: `${s.top}%`,
+              left: '-20%',
+              width: '30%',
+            }}
+            animate={{
+              left: ['-20%', '120%'],
+              opacity: [0, 1, 0]
+            }}
+            transition={{
+              duration: s.duration,
+              repeat: Infinity,
+              ease: "linear",
+              delay: s.delay,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* 3. Pulsing Floating Tech Nodes */}
+      {nodes.map((n) => (
+        <motion.div
+          key={`node-${n.id}`}
+          className={`absolute rounded-full ${n.isFuchsia ? 'bg-fuchsia-400 shadow-[0_0_20px_rgba(217,70,239,0.8)]' : 'bg-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.8)]'}`}
+          style={{
+            width: n.size,
+            height: n.size,
+            left: `${n.x}%`,
+            top: `${n.y}%`,
+          }}
+          animate={{
+            y: [0, -60, 0],
+            x: [0, 30, 0],
+            opacity: [0.1, 0.9, 0.1],
+            scale: [1, 1.5, 1]
+          }}
+          transition={{
+            duration: n.duration,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: n.delay,
+          }}
+        />
+      ))}
+
+      {/* Fade the bottom edge so it blends smoothly into the next section */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#020308] z-20"></div>
+    </div>
+  );
+};
+
+// --- 4. VIBRANT INTERACTIVE BENTO CARD ---
+function VibrantCard({ title, desc, icon, colorGradient, laserColor }: { title: string, desc: string, icon: ReactNode, colorGradient: string, laserColor: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -81,21 +190,28 @@ function VibrantCard({ title, desc, icon, colorGradient, borderHover }: { title:
       onMouseMove={handleMouseMove}
       onMouseLeave={() => { x.set(0); y.set(0); }}
       style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-      className="relative group rounded-[32px] p-[2px] w-full h-full perspective-1000"
+      className="relative group rounded-[32px] p-[2px] w-full h-full perspective-1000 overflow-hidden"
     >
-      <div className={`absolute inset-0 rounded-[32px] opacity-10 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${borderHover}`}></div>
+      <div className="absolute inset-0 rounded-[32px] overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0">
+         <motion.div
+           animate={{ rotate: 360 }}
+           transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
+           className="absolute -inset-[100%] z-0"
+           style={{ background: `conic-gradient(from 0deg, transparent 0 300deg, ${laserColor} 360deg)` }}
+         />
+      </div>
       
-      <div className="relative h-full w-full bg-[#05070E] rounded-[30px] p-8 md:p-10 flex flex-col shadow-2xl overflow-hidden">
-        <div className="relative z-10 flex flex-col h-full transform-gpu group-hover:translate-z-[20px] transition-transform duration-500">
+      <div className="absolute inset-0 rounded-[32px] bg-white/[0.05] z-0 group-hover:bg-transparent transition-colors duration-500"></div>
+      
+      <div className="relative z-10 h-full w-full bg-[#05070E]/95 backdrop-blur-xl rounded-[30px] p-8 md:p-10 flex flex-col shadow-2xl overflow-hidden">
+        <div className="relative z-20 flex flex-col h-full transform-gpu group-hover:translate-z-[20px] transition-transform duration-500">
           <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${colorGradient} flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(255,255,255,0.1)] group-hover:scale-110 transition-transform duration-500 text-white p-[1px]`}>
-            <div className="w-full h-full bg-[#05070E]/20 backdrop-blur-md rounded-[15px] flex items-center justify-center shadow-inner">
+            <div className="w-full h-full bg-[#05070E]/30 backdrop-blur-md rounded-[15px] flex items-center justify-center shadow-inner">
               {icon}
             </div>
           </div>
-          
           <h3 className="text-2xl font-bold text-white mb-4 tracking-tight drop-shadow-md">{title}</h3>
           <p className="text-slate-400 text-lg leading-relaxed font-light mb-8 flex-grow">{desc}</p>
-          
           <div className="mt-auto flex items-center text-sm font-bold text-white uppercase tracking-widest gap-2 group-hover:gap-4 transition-all opacity-50 group-hover:opacity-100">
             Initialize <span className="text-xl leading-none">&rarr;</span>
           </div>
@@ -122,17 +238,20 @@ export default function HomePage() {
   return (
     <div className="relative overflow-hidden selection:bg-cyan-500/30 bg-[#020308]">
       
-      {/* --- 1. CLEAN, PREMIUM DARK BACKGROUND --- */}
+      {/* --- 1. CLEAN DARK HERO BACKGROUND --- */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute inset-0 bg-[#020308]"></div>
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay"></div>
       </div>
 
-      {/* --- 2. THE HERO: EXACT PDF WORDING --- */}
+      {/* --- 2. THE HERO: EXACT PDF WORDING + BREATHTAKING ANIMATION --- */}
       <section className="relative pt-[20vh] pb-24 z-10 max-w-7xl mx-auto px-6 min-h-[85vh] flex flex-col justify-center items-center text-center">
         
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }} className="mb-8">
-          <div className="group relative inline-flex items-center gap-3 px-6 py-2.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 shadow-[0_0_20px_rgba(6,182,212,0.15)] cursor-default hover:bg-cyan-500/20 transition-colors">
+        {/* NEW BREATHTAKING BACKGROUND ANIMATION */}
+        <BreathtakingHeroBackground />
+        
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }} className="mb-8 relative z-10">
+          <div className="group relative inline-flex items-center gap-3 px-6 py-2.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 shadow-[0_0_20px_rgba(6,182,212,0.15)] cursor-default hover:bg-cyan-500/20 transition-colors backdrop-blur-md">
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.8)]"></span>
@@ -141,11 +260,8 @@ export default function HomePage() {
           </div>
         </motion.div>
         
-        <div className="max-w-4xl mx-auto mb-8">
-          <AnimatedText 
-            text="We engineer unfair" 
-            className="text-5xl sm:text-6xl md:text-[5.5rem] font-bold tracking-tighter text-white leading-[1.05]" 
-          />
+        <div className="max-w-4xl mx-auto mb-8 relative z-10">
+          <AnimatedText text="We engineer unfair" className="text-5xl sm:text-6xl md:text-[5.5rem] font-bold tracking-tighter text-white leading-[1.05]" />
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.3 }}>
              <h1 className="text-5xl sm:text-6xl md:text-[5.5rem] font-bold tracking-tighter leading-[1.05] text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 pb-2 drop-shadow-lg">
                digital advantages.
@@ -153,11 +269,11 @@ export default function HomePage() {
           </motion.div>
         </div>
         
-        <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 0.4 }} className="text-lg md:text-xl text-slate-400 mb-12 leading-relaxed max-w-3xl font-light">
+        <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 0.4 }} className="text-lg md:text-xl text-slate-300 mb-12 leading-relaxed max-w-3xl font-light relative z-10 drop-shadow-md">
           Architecting military-grade web applications, custom software ecosystems, and intelligent AI automation for enterprises that refuse to settle.
         </motion.p>
         
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 0.6 }} className="flex flex-col sm:flex-row gap-5 w-full sm:w-auto items-center">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 0.6 }} className="flex flex-col sm:flex-row gap-5 w-full sm:w-auto items-center relative z-10">
           <Magnetic strength={0.2}>
             <Link href="/contact" className="relative group px-10 py-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-base hover:scale-105 transition-all duration-500 shadow-[0_10px_40px_rgba(6,182,212,0.3)] flex items-center justify-center gap-3">
               Deploy Your Vision
@@ -167,7 +283,7 @@ export default function HomePage() {
             </Link>
           </Magnetic>
           <Magnetic strength={0.1}>
-            <Link href="#capabilities" className="px-10 py-4 rounded-full border border-white/20 bg-white/5 backdrop-blur-xl text-white font-semibold text-base hover:bg-white/10 transition-colors duration-500 text-center">
+            <Link href="#capabilities" className="px-10 py-4 rounded-full border border-white/20 bg-[#05070E]/50 backdrop-blur-xl text-white font-semibold text-base hover:bg-white/10 transition-colors duration-500 text-center shadow-lg">
               View Capabilities
             </Link>
           </Magnetic>
@@ -175,7 +291,7 @@ export default function HomePage() {
       </section>
 
       {/* --- 3. EXACT METRICS --- */}
-      <section className="py-16 relative z-10 border-y border-white/5 bg-white/[0.01]">
+      <section className="py-16 relative z-10 border-y border-white/5 bg-[#020308]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-wrap justify-center md:justify-around items-center gap-12 text-center">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="group cursor-default">
@@ -194,18 +310,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* --- NEW ADDITION: ENTERPRISE TECH STACK MARQUEE --- */}
+      {/* --- ENTERPRISE TECH STACK MARQUEE --- */}
       <section className="py-12 overflow-hidden border-b border-white/5 bg-[#020308] relative z-10">
         <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-[#020308] to-transparent z-20 pointer-events-none"></div>
         <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-[#020308] to-transparent z-20 pointer-events-none"></div>
-        
         <div className="flex w-max">
-          <motion.div 
-            animate={{ x: ["0%", "-50%"] }} 
-            transition={{ repeat: Infinity, ease: "linear", duration: 30 }}
-            className="flex gap-16 md:gap-32 items-center px-8 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500"
-          >
-            {/* Duplicated list for seamless looping */}
+          <motion.div animate={{ x: ["0%", "-50%"] }} transition={{ repeat: Infinity, ease: "linear", duration: 30 }} className="flex gap-16 md:gap-32 items-center px-8 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500">
             {[1, 2].map((set) => (
               <div key={set} className="flex gap-16 md:gap-32 items-center">
                 <span className="text-2xl font-bold tracking-tight text-white flex items-center gap-2"><svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 22h20L12 2z"/></svg> NEXT.JS</span>
@@ -221,10 +331,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* --- 4. SERVICE MATRIX (EXACT PDF TEXT) --- */}
+      {/* --- 4. SERVICE MATRIX WITH ANIMATED GRID BACKGROUND --- */}
       <section className="py-32 relative z-10" id="capabilities">
-        <div className="max-w-7xl mx-auto px-6">
-          
+        <AnimatedGridBackground />
+        
+        <div className="max-w-7xl mx-auto px-6 relative z-20">
           <div className="text-center mb-20 max-w-3xl mx-auto">
             <AnimatedText text="Elite Capabilities." className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-6" />
             <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-slate-400 text-xl font-light">We solve complex business bottlenecks with brilliant engineering.</motion.p>
@@ -235,65 +346,72 @@ export default function HomePage() {
               title="Web Ecosystems"
               desc="We architect beautifully fluid, high-performance web applications. Engineered on Next.js to deliver uncompromised speed, security, and global SEO dominance."
               colorGradient="from-cyan-400 to-blue-600"
-              borderHover="from-cyan-500 via-blue-500 to-indigo-500"
+              laserColor="rgba(6,182,212,1)"
               icon={<svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>}
             />
             <VibrantCard 
               title="Custom Software & AI"
               desc="Eradicate manual workflows. We develop proprietary software and integrate advanced AI models that automate operations and drastically reduce your corporate overhead."
               colorGradient="from-fuchsia-400 to-purple-600"
-              borderHover="from-fuchsia-500 via-purple-500 to-pink-500"
+              laserColor="rgba(217,70,239,1)"
               icon={<svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>}
             />
             <VibrantCard 
               title="Headless Commerce"
               desc="Transform how you sell. We architect decoupled, lightning-fast e-commerce storefronts that eliminate cart abandonment and maximize your conversion rates globally."
               colorGradient="from-emerald-400 to-teal-500"
-              borderHover="from-emerald-400 via-teal-500 to-cyan-500"
+              laserColor="rgba(52,211,153,1)"
               icon={<svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>}
             />
             <VibrantCard 
               title="Enterprise Cloud"
               desc="Absolute data sovereignty. We deploy applications on military-grade cloud architecture, ensuring zero downtime and impenetrable security against cyber threats."
               colorGradient="from-orange-400 to-rose-500"
-              borderHover="from-orange-400 via-rose-500 to-pink-500"
+              laserColor="rgba(2fb,146,60,1)"
               icon={<svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>}
             />
           </motion.div>
         </div>
       </section>
 
-      {/* --- NEW ADDITION: THE STACKLABX PROTOCOL (Process Section) --- */}
-      <section className="py-24 relative z-10 border-y border-white/5 bg-[#03050C]">
-        <div className="max-w-7xl mx-auto px-6">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="mb-20 text-center">
+      {/* --- PROTOCOL SECTION WITH ANIMATED CIRCUIT LINES --- */}
+      <section className="py-32 relative z-10 border-y border-white/5 bg-[#03050C]">
+        <div className="max-w-7xl mx-auto px-6 relative">
+          <div className="absolute top-[60%] left-0 right-0 hidden md:block h-px bg-white/5 pointer-events-none">
+             <motion.div animate={{ x: ["-100%", "1000%"] }} transition={{ repeat: Infinity, duration: 3, ease: "linear" }} className="w-32 h-full bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_10px_rgba(6,182,212,0.8)]"></motion.div>
+          </div>
+
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="mb-24 text-center relative z-10">
             <motion.h2 variants={fadeUp} className="text-xs font-bold text-indigo-400 uppercase tracking-[0.2em] mb-4">THE STACKLABX PROTOCOL</motion.h2>
             <motion.h3 variants={fadeUp} className="text-4xl md:text-5xl font-bold text-white tracking-tight">How we deploy digital empires.</motion.h3>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="relative p-8 rounded-3xl border border-white/10 bg-[#05070E] shadow-2xl">
-              <div className="text-6xl font-black text-white/5 absolute top-6 right-8">01</div>
-              <h4 className="text-xl font-bold text-white mb-4 relative z-10">Architectural Audit</h4>
-              <p className="text-slate-400 text-base font-light leading-relaxed">We analyze your current bottlenecks, map your infrastructure requirements, and blueprint a high-performance system designed specifically for scale.</p>
+          <div className="grid md:grid-cols-3 gap-12 relative z-10">
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="relative p-10 rounded-[32px] border border-white/10 bg-[#05070E] shadow-2xl overflow-hidden group hover:border-white/20 transition-colors">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-3xl group-hover:bg-indigo-500/20 transition-colors"></div>
+              <div className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white/10 to-transparent mb-6">01</div>
+              <h4 className="text-2xl font-bold text-white mb-4 relative z-10">Architectural Audit</h4>
+              <p className="text-slate-400 text-lg font-light leading-relaxed">We analyze your current bottlenecks, map your infrastructure requirements, and blueprint a high-performance system designed specifically for scale.</p>
             </motion.div>
             
-            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="relative p-8 rounded-3xl border border-white/10 bg-[#05070E] shadow-2xl">
-              <div className="text-6xl font-black text-white/5 absolute top-6 right-8">02</div>
-              <h4 className="text-xl font-bold text-cyan-400 mb-4 relative z-10">Core Engineering</h4>
-              <p className="text-slate-400 text-base font-light leading-relaxed">Our elite engineering team builds your custom platform using modern frameworks, ensuring zero technical debt and uncompromised security.</p>
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="relative p-10 rounded-[32px] border border-cyan-500/30 bg-[#05070E] shadow-[0_0_30px_rgba(6,182,212,0.1)] overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 blur-3xl group-hover:bg-cyan-500/20 transition-colors"></div>
+              <div className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-cyan-400/20 to-transparent mb-6">02</div>
+              <h4 className="text-2xl font-bold text-cyan-400 mb-4 relative z-10">Core Engineering</h4>
+              <p className="text-slate-400 text-lg font-light leading-relaxed">Our elite engineering team builds your custom platform using modern frameworks, ensuring zero technical debt and uncompromised security.</p>
             </motion.div>
 
-            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="relative p-8 rounded-3xl border border-white/10 bg-[#05070E] shadow-2xl">
-              <div className="text-6xl font-black text-white/5 absolute top-6 right-8">03</div>
-              <h4 className="text-xl font-bold text-white mb-4 relative z-10">Global Deployment</h4>
-              <p className="text-slate-400 text-base font-light leading-relaxed">We launch your architecture across distributed cloud edge networks, establishing zero downtime, ultra-low latency, and continuous monitoring.</p>
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="relative p-10 rounded-[32px] border border-white/10 bg-[#05070E] shadow-2xl overflow-hidden group hover:border-white/20 transition-colors">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-fuchsia-500/10 blur-3xl group-hover:bg-fuchsia-500/20 transition-colors"></div>
+              <div className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white/10 to-transparent mb-6">03</div>
+              <h4 className="text-2xl font-bold text-white mb-4 relative z-10">Global Deployment</h4>
+              <p className="text-slate-400 text-lg font-light leading-relaxed">We launch your architecture across distributed cloud edge networks, establishing zero downtime, ultra-low latency, and continuous monitoring.</p>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* --- 5. TESTIMONIALS (EXACT PDF TEXT) --- */}
+      {/* --- 5. TESTIMONIALS --- */}
       <section className="py-32 relative z-10 bg-[#020308]">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="text-center mb-20 max-w-2xl mx-auto">
@@ -335,7 +453,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* --- 6. COLORFUL BLOG FEED (EXACT PDF TEXT) --- */}
+      {/* --- 6. COLORFUL BLOG FEED --- */}
       <section className="py-32 relative z-10 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="flex flex-col md:flex-row md:justify-between md:items-end mb-16 gap-6">
@@ -371,7 +489,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* --- 7. THE COLORFUL MEGA FUNNEL (EXACT PDF TEXT) --- */}
+      {/* --- 7. THE COLORFUL MEGA FUNNEL --- */}
       <section className="relative z-10 py-32 lg:py-48">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="max-w-5xl mx-auto px-6">
           <div className="rounded-[48px] p-[2px] bg-gradient-to-b from-blue-500/50 to-transparent shadow-[0_0_100px_rgba(59,130,246,0.15)] relative overflow-hidden group hover:shadow-[0_0_150px_rgba(6,182,212,0.2)] transition-shadow duration-700">
