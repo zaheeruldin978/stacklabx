@@ -1,115 +1,27 @@
-import { prisma } from "../../lib/prisma";
-import Link from "next/link";
+import db from "../../lib/db";
+import BlogClient from "./BlogClient";
 
-// --- DATA SANITIZATION ENGINE ---
-// This purges WordPress shortcodes and decodes HTML entities safely
-function sanitizeExcerpt(rawExcerpt: string | null) {
-  if (!rawExcerpt) return 'Read the full architectural breakdown inside...';
-
-  let clean = rawExcerpt
-    // 1. Purge WordPress Page Builder Shortcodes (e.g., [et_pb_section...])
-    .replace(/\[.*?\]/g, '')
-    // 2. Strip standard HTML tags to prevent React hydration errors
-    .replace(/<[^>]+>/g, ' ')
-    // 3. Translate raw HTML entities into human-readable punctuation
-    .replace(/&#8217;/g, "'")    // Right single quote / Apostrophe
-    .replace(/&#8216;/g, "'")    // Left single quote
-    .replace(/&#8220;/g, '"')    // Left double quote
-    .replace(/&#8221;/g, '"')    // Right double quote
-    .replace(/&#8211;/g, "-")    // En dash
-    .replace(/&#8212;/g, "—")    // Em dash
-    .replace(/&amp;/g, "&")      // Ampersand
-    .replace(/&hellip;/g, "...") // Ellipsis
-    .replace(/&nbsp;/g, " ")     // Non-breaking space
-    .replace(/&#[0-9]+;/g, "");  // Catch any remaining rogue encoded numbers
-
-  // 4. Clean up multiple spaces left behind by the stripping process
-  clean = clean.replace(/\s+/g, ' ').trim();
-
-  // If the excerpt was entirely shortcodes and is now empty, use the fallback
-  return clean.length > 5 ? clean : 'Read the full architectural breakdown inside...';
-}
+export const revalidate = 60; 
 
 export default async function BlogPage() {
-  // Fetching all data directly from your local PostgreSQL (Zero Latency)
-  const posts = await prisma.post.findMany({
-    orderBy: { createdAt: 'desc' }
+  const posts = await db.post.findMany({
+    where: { status: "PUBLISHED", isDeleted: false },
+    orderBy: { createdAt: "desc" },
+    include: {
+      category: true, 
+    },
   });
 
-  return (
-    <main className="min-h-screen pt-32 pb-20 px-6 relative">
-      <div className="absolute inset-0 w-full h-full bg-grid -z-10 opacity-30"></div>
-      
-      <div className="max-w-7xl mx-auto">
-        <header className="mb-20 text-center md:text-left">
-          <h1 className="text-6xl md:text-8xl font-black text-white tracking-tighter leading-[0.9] mb-6">
-            Engineering <span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-500 font-outline-2">Insights.</span>
-          </h1>
-          <p className="text-slate-400 max-w-2xl text-lg font-light italic">
-            Synchronized directly with the StacklabX Local Database.
-          </p>
-        </header>
+  // Fetch only top-level categories, but include their children
+  const categories = await db.category.findMany({
+    where: { parentId: null }, // Only grab main categories
+    orderBy: { name: "asc" },
+    include: {
+      children: {
+        orderBy: { name: "asc" }
+      }
+    }
+  });
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-          {posts.map((post) => (
-            <Link href={`/blog/${post.slug}`} key={post.id} className="group block">
-              <article className="bento-card h-full flex flex-col overflow-hidden hover:border-stacklab-cyan/40 transition-all duration-500 bg-[#050505]">
-                
-                {/* Image Container */}
-                <div className="h-56 w-full overflow-hidden relative">
-                  {post.image ? (
-                    <img 
-                      src={post.image} 
-                      alt="Featured" 
-                      className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700 opacity-60 group-hover:opacity-100"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-stacklab-blue/20 to-black flex items-center justify-center font-mono text-[10px] text-slate-500 uppercase">
-                      No Media Meta Found
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent"></div>
-                </div>
-                
-                <div className="p-8 flex-1 flex flex-col">
-                  <span className="text-[10px] font-black text-stacklab-cyan uppercase tracking-[0.3em] mb-4 block">
-                    {post.date}
-                  </span>
-
-                  {/* Title correctly decodes HTML entities natively via dangerouslySetInnerHTML */}
-                  <h2 
-                    className="text-2xl font-bold text-white mb-4 group-hover:text-stacklab-blue transition-colors leading-tight"
-                    dangerouslySetInnerHTML={{ __html: post.title }}
-                  />
-
-                  {/* THE FIX: Outputting the fully sanitized, readable text */}
-                  <p className="text-slate-500 text-sm font-light leading-relaxed mb-8 flex-1 line-clamp-2">
-                    {sanitizeExcerpt(post.excerpt)}
-                  </p>
-
-                  <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between">
-                    <span className="text-[10px] font-black text-white uppercase tracking-widest group-hover:text-stacklab-cyan transition-colors">
-                      Enter Archive
-                    </span>
-                    <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:border-stacklab-cyan transition-all group-hover:translate-x-2">
-                      <span className="text-white text-xs">→</span>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            </Link>
-          ))}
-        </div>
-
-        {/* Failsafe if the database is empty */}
-        {posts.length === 0 && (
-          <div className="py-20 text-center bento-card border-dashed mt-10">
-            <p className="text-slate-500 font-mono text-sm tracking-widest uppercase">
-              Local database is empty. Please run the migration from the Nerve Center.
-            </p>
-          </div>
-        )}
-      </div>
-    </main>
-  );
+  return <BlogClient posts={posts} categories={categories} />;
 }
