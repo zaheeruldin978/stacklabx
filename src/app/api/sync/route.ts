@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import db from "../../../lib/db"; 
-import { fetchAllPosts } from "../../../lib/wordpress"; 
+import { fetchAllPosts, fetchCategories } from "../../../lib/wordpress"; 
 
 const SYNC_SECRET = process.env.SYNC_SECRET || "stacklabx-secure-sync-2026";
 
@@ -8,74 +8,80 @@ export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${SYNC_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized. Invalid Sync Token." }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    console.log("🟢 [SYNC ENGINE] Fetching latest publications from WordPress...");
+    console.log("🟢 [SYNC ENGINE] Protocol Initiated for N-Level Tree...");
 
+    const wpCategories = await fetchCategories();
+    const wpIdToDbIdMap = new Map();
+
+    // ============================================================================
+    // PHASE 1: CREATE ALL CATEGORIES (Unlinked)
+    // We must create everything first to generate Prisma DB IDs for the mapping.
+    // ============================================================================
+    for (const cat of wpCategories) {
+      const dbCat = await db.category.upsert({
+        where: { slug: cat.slug },
+        update: { name: cat.name },
+        create: { name: cat.name, slug: cat.slug },
+      });
+      wpIdToDbIdMap.set(cat.wpId, dbCat.id);
+    }
+
+    // ============================================================================
+    // PHASE 2: LINK THE N-LEVEL HIERARCHY
+    // Now that everything exists, we safely link parents to children 4-levels deep.
+    // ============================================================================
+    for (const cat of wpCategories) {
+      if (cat.parentWpId) {
+        const parentDbId = wpIdToDbIdMap.get(cat.parentWpId);
+        if (parentDbId) {
+          await db.category.update({
+            where: { id: wpIdToDbIdMap.get(cat.wpId) },
+            data: { parentId: parentDbId },
+          });
+        }
+      }
+    }
+    console.log(`✅ [SYNC ENGINE] N-Level Taxonomy Tree reconstructed.`);
+
+    // ============================================================================
+    // PHASE 3: CONTENT SYNC
+    // ============================================================================
     const wpPosts = await fetchAllPosts(); 
-
-    if (!wpPosts || wpPosts.length === 0) {
-      return NextResponse.json({ message: "No publications found in WordPress." }, { status: 200 });
-    }
-
-    console.log(`🟢 [SYNC ENGINE] Downloaded ${wpPosts.length} posts. Synchronizing Taxonomy & Content...`);
-
     let syncedCount = 0;
 
     for (const post of wpPosts) {
-      let categoryId = null;
+      const actualCategoryId = post.wpCategoryId ? wpIdToDbIdMap.get(post.wpCategoryId) || null : null;
 
-      // 1. SYNC THE CATEGORY FIRST
-      if (post.category) {
-        const dbCategory = await db.category.upsert({
-          where: { slug: post.category.slug },
-          update: { name: post.category.name },
-          create: {
-            name: post.category.name,
-            slug: post.category.slug,
-          },
-        });
-        categoryId = dbCategory.id; // Grab the ID to link it to the post below
-      }
-
-      // 2. SYNC THE POST (And link the Category ID)
       await db.post.upsert({
         where: { slug: post.slug }, 
         update: {
-          title: post.title || "Untitled Payload",
+          title: post.title || "Untitled",
           excerpt: post.excerpt || "",
           content: post.content || "", 
           imageUrl: post.featuredImage || null, 
           status: "PUBLISHED",         
           isDeleted: false,
-          categoryId: categoryId, // <--- LINKING THE CATEGORY
+          categoryId: actualCategoryId, 
         },
         create: {
           slug: post.slug,
-          title: post.title || "Untitled Payload",
+          title: post.title || "Untitled",
           excerpt: post.excerpt || "",
           content: post.content || "", 
           imageUrl: post.featuredImage || null, 
           status: "PUBLISHED",
-          categoryId: categoryId, // <--- LINKING THE CATEGORY
+          categoryId: actualCategoryId, 
         },
       });
       syncedCount++;
     }
 
-    console.log(`✅ [SYNC ENGINE] Success! ${syncedCount} articles and their categories synchronized.`);
-
-    return NextResponse.json({ 
-      success: true, 
-      message: `Protocol complete. ${syncedCount} articles permanently stored.`
-    }, { status: 200 });
+    return NextResponse.json({ success: true, message: `Synced ${syncedCount} articles.` }, { status: 200 });
 
   } catch (error: any) {
-    console.error("🔴 [SYNC ENGINE] Critical Failure:", error);
-    return NextResponse.json({ 
-      error: "Database synchronization failed.", 
-      details: error.message || "Unknown server error"
-    }, { status: 500 });
+    return NextResponse.json({ error: "Sync failed.", details: error.message }, { status: 500 });
   }
 }

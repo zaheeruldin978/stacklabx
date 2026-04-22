@@ -7,18 +7,26 @@ export default async function BlogPage() {
   const posts = await db.post.findMany({
     where: { status: "PUBLISHED", isDeleted: false },
     orderBy: { createdAt: "desc" },
-    include: {
-      category: true, 
-    },
+    include: { category: true },
   });
 
-  // Fetch only top-level categories, but include their children
+  // Fetch the N-Level Tree (Up to 4 levels deep: Parent -> Child -> Grandchild -> Great-Grandchild)
   const categories = await db.category.findMany({
-    where: { parentId: null }, // Only grab main categories
+    where: { parentId: null },
     orderBy: { name: "asc" },
     include: {
       children: {
-        orderBy: { name: "asc" }
+        orderBy: { name: "asc" },
+        include: {
+          children: {
+            orderBy: { name: "asc" },
+            include: {
+              children: {
+                orderBy: { name: "asc" }
+              }
+            }
+          }
+        }
       }
     }
   });
