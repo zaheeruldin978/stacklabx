@@ -28,7 +28,7 @@ function Magnetic({ children, strength = 0.15 }: { children: ReactNode, strength
   };
 
   return (
-    <motion.div ref={ref} onMouseMove={handleMouse} onMouseLeave={reset} style={{ x: springX, y: springY }}>
+    <motion.div ref={ref} onMouseMove={handleMouse} onMouseLeave={reset} style={{ x: springX, y: springY }} className="will-change-transform">
       {children}
     </motion.div>
   );
@@ -46,7 +46,7 @@ const AnimatedText = ({ text, className = "" }: { text: string, className?: stri
               hidden: { y: "100%", opacity: 0 },
               visible: { y: 0, opacity: 1, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: i * 0.03 } }
             }}
-            className="inline-block"
+            className="inline-block will-change-transform"
           >
             {word}
           </motion.div>
@@ -80,12 +80,12 @@ const ServicesHeroBackground = () => {
       <motion.div
         animate={{ rotate: 360, opacity: [0.2, 0.4, 0.2] }}
         transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
-        className="absolute w-[80vw] h-[80vh] max-w-[1000px] bg-gradient-to-tr from-blue-600/30 via-indigo-600/20 to-fuchsia-600/20 blur-[120px] rounded-full mix-blend-screen transform-gpu"
+        className="absolute w-[80vw] h-[80vh] max-w-[1000px] bg-gradient-to-tr from-blue-600/30 via-indigo-600/20 to-fuchsia-600/20 blur-[120px] rounded-full mix-blend-screen transform-gpu will-change-transform"
       />
       <motion.div
         animate={{ rotate: -360, opacity: [0.15, 0.3, 0.15] }}
         transition={{ duration: 55, repeat: Infinity, ease: "linear" }}
-        className="absolute w-[70vw] h-[70vh] max-w-[900px] bg-gradient-to-bl from-cyan-500/20 via-blue-600/20 to-purple-500/20 blur-[130px] rounded-full mix-blend-screen transform-gpu"
+        className="absolute w-[70vw] h-[70vh] max-w-[900px] bg-gradient-to-bl from-cyan-500/20 via-blue-600/20 to-purple-500/20 blur-[130px] rounded-full mix-blend-screen transform-gpu will-change-transform"
       />
 
       {nodes.map((n) => (
@@ -137,13 +137,13 @@ function VibrantCard({ title, desc, icon, colorGradient, laserColor, link }: { t
   };
 
   return (
-    <Link href={link} className="block w-full h-full">
+    <Link href={link} prefetch={false} className="block w-full h-full">
       <motion.div
         ref={ref}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => { x.set(0); y.set(0); }}
         style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-        className="relative group rounded-[28px] p-[1.5px] w-full h-full perspective-1000 overflow-hidden cursor-pointer"
+        className="relative group rounded-[28px] p-[1.5px] w-full h-full perspective-1000 overflow-hidden cursor-pointer transform-gpu will-change-transform"
       >
         <div className="absolute inset-0 rounded-[28px] overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0">
            <div
@@ -154,18 +154,14 @@ function VibrantCard({ title, desc, icon, colorGradient, laserColor, link }: { t
         
         <div className="absolute inset-0 rounded-[28px] bg-gradient-to-br from-white/[0.08] to-white/[0.02] z-0 group-hover:bg-transparent transition-colors duration-500"></div>
         
-        {/* Adjusted padding (p-5 md:p-6) for sleek 4-column fit */}
         <div className="relative z-10 h-full w-full bg-[#05070E]/90 backdrop-blur-2xl rounded-[26px] p-5 md:p-6 flex flex-col shadow-2xl overflow-hidden">
           <div className="relative z-20 flex flex-col h-full transform-gpu group-hover:translate-z-[12px] transition-transform duration-500">
-            
-            {/* Adjusted icon size (w-12 h-12) */}
             <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colorGradient} flex items-center justify-center mb-4 shadow-[0_0_25px_rgba(255,255,255,0.15)] group-hover:scale-110 transition-transform duration-500 text-white p-[1px]`}>
               <div className="w-full h-full bg-[#05070E]/40 backdrop-blur-md rounded-[11px] flex items-center justify-center shadow-inner">
                 {icon}
               </div>
             </div>
             
-            {/* Adjusted text sizes for density */}
             <h3 className="text-lg font-bold text-white mb-2 tracking-tight drop-shadow-md">{title}</h3>
             <p className="text-slate-300 text-sm leading-relaxed font-light mb-5 flex-grow">{desc}</p>
             
@@ -297,7 +293,7 @@ export default function ServicesPage() {
         <div className="max-w-[1400px] mx-auto px-6 relative z-20">
           
           {/* 4 Columns on XL screens, 3 on Large, 2 on Medium */}
-          <motion.div style={{ y: yParallax }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <motion.div style={{ y: yParallax }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 transform-gpu will-change-transform">
             {allServices.map((service, index) => (
               <VibrantCard 
                 key={index}

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
 // ============================================================================
@@ -136,9 +137,7 @@ export default function BlogClient({ posts, categories }: { posts: any[], catego
       {/* SHARP AMBIENT BACKGROUND WITH ENHANCED COLORS */}
       {/* ========================================== */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        {/* Deep Blue Glow Top Right */}
         <div className="absolute top-[-10%] right-[-5%] w-[50vw] h-[50vh] bg-[#0066FF]/15 blur-[150px] rounded-full mix-blend-screen transform-gpu" />
-        {/* Subtle Violet Glow Center Left to add depth */}
         <div className="absolute top-[20%] left-[-10%] w-[40vw] h-[40vh] bg-fuchsia-600/5 blur-[150px] rounded-full mix-blend-screen transform-gpu" />
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay"></div>
       </div>
@@ -150,7 +149,6 @@ export default function BlogClient({ posts, categories }: { posts: any[], catego
         {/* ========================================== */}
         <div className="flex flex-col lg:flex-row justify-between items-start mb-10 gap-8">
           
-          {/* Left Side: Professional, Colorful Headings */}
           <div className="max-w-3xl w-full">
             <motion.div initial="hidden" animate="visible" variants={fadeUp} className="mb-6">
               <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-[#0066FF]/20 bg-[#0066FF]/10 backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
@@ -162,9 +160,8 @@ export default function BlogClient({ posts, categories }: { posts: any[], catego
               </div>
             </motion.div>
             
-            {/* VIBRANT BRAND GRADIENT TEXT */}
             <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="text-5xl sm:text-6xl md:text-[5rem] font-bold tracking-tight pb-2 mb-6 leading-[1.05] text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-400 to-fuchsia-400 drop-shadow-xl">
-               Popular Publications.
+                Popular Publications.
             </motion.h1>
             
             <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="text-lg md:text-xl text-slate-300 font-light leading-relaxed max-w-2xl drop-shadow-md">
@@ -172,7 +169,6 @@ export default function BlogClient({ posts, categories }: { posts: any[], catego
             </motion.p>
           </div>
 
-          {/* Right Side: The Mega Menu ONLY */}
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="relative z-50 w-full lg:w-auto flex flex-col lg:items-end">
             <div className="relative w-full lg:w-[280px]" ref={dropdownRef}>
               <button 
@@ -228,9 +224,6 @@ export default function BlogClient({ posts, categories }: { posts: any[], catego
           </motion.div>
         </div>
 
-        {/* ========================================== */}
-        {/* SEPARATOR LINE                             */}
-        {/* ========================================== */}
         <div className="w-full h-px bg-gradient-to-r from-white/10 via-white/5 to-transparent mb-8"></div>
 
         {/* ========================================== */}
@@ -238,7 +231,6 @@ export default function BlogClient({ posts, categories }: { posts: any[], catego
         {/* ========================================== */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-8 relative z-40">
           
-          {/* Left: Live Data Badge */}
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }} className="flex items-center gap-3 px-5 py-2.5 rounded-full bg-[#0a0f1a]/60 border border-white/5 backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] w-max" suppressHydrationWarning>
             <div className="relative flex items-center justify-center w-2 h-2">
               <span className="absolute inline-flex h-full w-full rounded-full bg-[#00E5FF] opacity-60 animate-ping"></span>
@@ -249,11 +241,8 @@ export default function BlogClient({ posts, categories }: { posts: any[], catego
             </span>
           </motion.div>
 
-          {/* Right: Vibrant Glowing Search Bar */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }} className="relative w-full sm:w-[320px]">
-            {/* The Gradient Border Wrapper */}
             <div className="p-[1.5px] rounded-full bg-gradient-to-r from-[#0066FF]/40 via-purple-500/30 to-[#00E5FF]/40 hover:from-[#0066FF]/60 hover:to-[#00E5FF]/60 focus-within:from-[#0066FF] focus-within:to-[#00E5FF] transition-all duration-500 shadow-[0_0_15px_rgba(0,102,255,0.1)] focus-within:shadow-[0_0_30px_rgba(0,229,255,0.3)]">
-              {/* The Inner Input Container */}
               <div className="relative h-full w-full bg-[#0a0f1a]/90 backdrop-blur-xl rounded-full overflow-hidden">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <svg className="h-5 w-5 text-[#00E5FF]/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -285,34 +274,54 @@ export default function BlogClient({ posts, categories }: { posts: any[], catego
         {/* ========================================== */}
         <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
           <AnimatePresence mode="popLayout">
-            {filteredPosts.map((post) => (
-              <motion.div key={post.id} layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.3 }}>
-                <div className="relative group bg-white/[0.02] backdrop-blur-3xl border border-white/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] rounded-[24px] p-6 transition-all duration-300 overflow-hidden h-full flex flex-col hover:border-[#0066FF]/50 hover:bg-[#0066FF]/5">
-                  <Link href={`/blog/${post.slug}`} className="absolute inset-0 z-10"><span className="sr-only">Read {post.title}</span></Link>
-                  <div className="h-48 w-full rounded-[16px] overflow-hidden relative mb-6 border border-white/5 bg-[#020408]">
-                    {post.imageUrl ? (
-                      <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover grayscale-[30%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 opacity-90" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-[#0066FF]/20 to-[#00E5FF]/20 flex items-center justify-center">
-                        <svg className="w-8 h-8 text-[#0066FF]/50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+            {filteredPosts.map((post, i) => {
+              // Quick hydration-safe HTML stripper
+              let cleanExcerpt = post.excerpt || "Read the full technical breakdown inside...";
+              cleanExcerpt = cleanExcerpt.replace(/<[^>]*>?/gm, '').replace(/&nbsp;|&amp;|&quot;|&apos;|&#39;|&#8217;|&#8216;|&#8220;|&#8221;/g, ' ');
+
+              return (
+                <motion.div key={post.id} layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.3 }}>
+                  <div className="relative group bg-white/[0.02] backdrop-blur-3xl border border-white/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] rounded-[24px] p-6 transition-all duration-300 overflow-hidden h-full flex flex-col hover:border-[#0066FF]/50 hover:bg-[#0066FF]/5">
+                    <Link href={`/blog/${post.slug}`} className="absolute inset-0 z-10"><span className="sr-only">Read {post.title}</span></Link>
+                    
+                    {/* CHANGED: aspect-video ensures 16:9 ratio, no zooming */}
+                    <div className="aspect-video w-full rounded-[16px] overflow-hidden relative mb-6 border border-white/5 bg-[#020408]">
+                      {post.imageUrl ? (
+                        <Image 
+                          src={post.imageUrl} 
+                          alt={post.title || "Blog Post"} 
+                          fill
+                          priority={i <= 2} // Preloads the entire first row for max speed
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          className="object-cover grayscale-[30%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 opacity-90" 
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-[#0066FF]/20 to-[#00E5FF]/20 flex items-center justify-center">
+                          <svg className="w-8 h-8 text-[#0066FF]/50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-2 mb-3 relative z-20">
+                      <span className="text-[9px] font-bold text-[#0066FF] uppercase tracking-widest bg-[#0066FF]/10 px-2 py-1 rounded-sm border border-[#0066FF]/20">{post.category?.name || "Uncategorized"}</span>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block" suppressHydrationWarning>{new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                    <h2 className="text-xl font-bold text-white mb-3 tracking-tight group-hover:text-[#00E5FF] transition-colors line-clamp-2 relative z-20" dangerouslySetInnerHTML={{ __html: post.title }} suppressHydrationWarning />
+                    
+                    <div className="text-sm text-slate-400 font-light leading-relaxed mb-6 flex-grow line-clamp-3 prose-p:m-0 relative z-20 pointer-events-none">
+                      {cleanExcerpt}
+                    </div>
+                    
+                    <div className="mt-auto pt-5 border-t border-white/[0.06] flex items-center justify-between group-hover:border-[#0066FF]/20 transition-colors relative z-20">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300 group-hover:text-[#00E5FF] transition-colors">Read Article</span>
+                      <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-[#0066FF]/20 group-hover:border-[#0066FF]/50 transition-all duration-300 group-hover:translate-x-1">
+                        <span className="text-white text-sm leading-none">&rarr;</span>
                       </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 mb-3 relative z-20">
-                    <span className="text-[9px] font-bold text-[#0066FF] uppercase tracking-widest bg-[#0066FF]/10 px-2 py-1 rounded-sm border border-[#0066FF]/20">{post.category?.name || "Uncategorized"}</span>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block" suppressHydrationWarning>{new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                  </div>
-                  <h2 className="text-xl font-bold text-white mb-3 tracking-tight group-hover:text-[#00E5FF] transition-colors line-clamp-2 relative z-20" dangerouslySetInnerHTML={{ __html: post.title }} suppressHydrationWarning />
-                  <div className="text-sm text-slate-400 font-light leading-relaxed mb-6 flex-grow line-clamp-3 prose-p:m-0 relative z-20 pointer-events-none" dangerouslySetInnerHTML={{ __html: post.excerpt || "Read the full technical breakdown inside..." }} suppressHydrationWarning />
-                  <div className="mt-auto pt-5 border-t border-white/[0.06] flex items-center justify-between group-hover:border-[#0066FF]/20 transition-colors relative z-20">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300 group-hover:text-[#00E5FF] transition-colors">Read Article</span>
-                    <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-[#0066FF]/20 group-hover:border-[#0066FF]/50 transition-all duration-300 group-hover:translate-x-1">
-                      <span className="text-white text-sm leading-none">&rarr;</span>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         </motion.div>
 

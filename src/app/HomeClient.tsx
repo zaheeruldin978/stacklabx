@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion, useScroll, useTransform, useSpring, useMotionValue } from "framer-motion";
 import LeadFunnel from "../components/sections/LeadFunnel";
 import { useRef, ReactNode } from "react";
@@ -196,11 +197,9 @@ function VibrantCard({ title, desc, icon, colorGradient, laserColor, linkHref }:
 }
 
 // --- FIX: HYDRATION-SAFE HTML STRIPPER ---
-// Works exactly the same on Node.js Server and Client Browser
 const stripHtml = (html: string) => {
   if (!html) return "";
-  let text = html.replace(/<[^>]*>?/gm, ''); // Strip tags
-  // Manually decode common WP HTML entities to ensure server/client match
+  let text = html.replace(/<[^>]*>?/gm, ''); 
   text = text.replace(/&#8217;/g, "’")
              .replace(/&#8216;/g, "‘")
              .replace(/&#8220;/g, "“")
@@ -477,9 +476,16 @@ export default function HomeClient({ recentPosts }: { recentPosts: any[] }) {
                 return (
                   <motion.div variants={fadeUp} key={post.id} className="h-full">
                     <Link href={`/blog/${post.slug}`} className="group block rounded-[32px] p-6 border border-white/5 bg-[#05070E] hover:border-white/20 transition-all duration-500 hover:-translate-y-2 shadow-xl h-full flex flex-col">
-                      <div className="h-56 rounded-[24px] mb-6 overflow-hidden relative shadow-lg bg-[#020408]">
+                      <div className="aspect-video w-full rounded-[16px] overflow-hidden relative mb-6 border border-white/5 bg-[#020408]">
                         {post.imageUrl ? (
-                          <img src={post.imageUrl} alt={post.title} className="w-full h-full object-contain grayscale-[30%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 opacity-90" />
+                          <Image 
+                            src={post.imageUrl} 
+                            alt={post.title || "StacklabX Article"} 
+                            fill
+                            priority={i === 0}
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw"
+                            className="object-cover grayscale-[30%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 opacity-90" 
+                          />
                         ) : (
                           <div className={`w-full h-full bg-gradient-to-br ${gradientColor} opacity-90 group-hover:opacity-100 transition-opacity`}>
                             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>

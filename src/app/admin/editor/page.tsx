@@ -530,7 +530,9 @@ export default function IntelligenceEditor() {
   const router = useRouter();
   const [isPublishing, setIsPublishing] = useState(false);
   const [status, setStatus] = useState<{ type: 'error' | 'success' | null, msg: string }>({ type: null, msg: "" });
+  
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isOutlineOpen, setIsOutlineOpen] = useState(false); // NEW: State for Outline Drawer
   const [lastAutoSave, setLastAutoSave] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
@@ -552,6 +554,8 @@ export default function IntelligenceEditor() {
   const [tocItems, setTocItems] = useState<{ id: string; text: string; level: number }[]>([]);
   const [readingTime, setReadingTime] = useState(0);
   const [zenMode, setZenMode] = useState(false);
+
+  const [publishAction, setPublishAction] = useState<"DRAFT" | "PUBLISHED">("PUBLISHED");
 
   const editor = useEditor({
     immediatelyRender: false, 
@@ -750,11 +754,11 @@ export default function IntelligenceEditor() {
   async function handlePublish(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setIsPublishing(true);
-    const submitter = (e.nativeEvent as any).submitter as HTMLButtonElement;
+    
     const formData = new FormData(e.currentTarget);
     formData.set("content", content); 
     formData.set("image", imageUrl); 
-    formData.set("status", submitter.value === "draft" ? "DRAFT" : "PUBLISHED"); 
+    formData.set("status", publishAction);
     formData.set("category", category);
     formData.set("tags", JSON.stringify(tags));
     formData.set("visibility", visibility);
@@ -762,8 +766,8 @@ export default function IntelligenceEditor() {
 
     const response = await publishArticle(formData);
     if (response.success) {
-      setStatus({ type: 'success', msg: submitter.value === "draft" ? "Draft Saved" : response.message });
-      if (submitter.value === "publish") {
+      setStatus({ type: 'success', msg: publishAction === "DRAFT" ? "Draft Saved" : response.message });
+      if (publishAction === "PUBLISHED") {
         (e.target as HTMLFormElement).reset(); 
         setTitle(""); setSlug(""); setExcerpt(""); setContent(""); setImageUrl(""); setTags([]);
         if (editor) editor.commands.clearContent();
@@ -847,9 +851,14 @@ export default function IntelligenceEditor() {
         </div>
       )}
 
-      <div className={`max-w-[1400px] mx-auto px-6 relative z-10 transition-all duration-500 flex flex-col xl:flex-row gap-8 ${isDrawerOpen && !zenMode ? 'opacity-30 md:opacity-100 md:pr-[450px]' : ''}`}>
+      {/* ELITE FIX: The Layout Wrapper now centers the Editor perfectly and dynamically shifts if you open a drawer. */}
+      <div className={`max-w-[1400px] mx-auto px-6 relative z-10 transition-all duration-500 flex flex-col gap-8 
+        ${isDrawerOpen && !zenMode ? 'opacity-30 md:opacity-100 md:pr-[450px]' : ''} 
+        ${isOutlineOpen && !zenMode ? 'opacity-30 md:opacity-100 md:pl-[350px]' : ''}
+      `}>
         
-        <div className={`flex-1 w-full mx-auto ${zenMode ? 'max-w-3xl pt-20' : 'max-w-5xl xl:mx-0'}`}>
+        {/* The Main Editor Column now defaults to max-w-5xl (Perfect centered reading width) */}
+        <div className={`flex-1 w-full mx-auto ${zenMode ? 'max-w-3xl pt-20' : 'max-w-5xl'}`}>
           
           {!zenMode && (
             <div className="mb-10 pt-8">
@@ -864,7 +873,13 @@ export default function IntelligenceEditor() {
                       {lastAutoSave}
                     </p>
                   )}
-                  {/* ELITE: MARKDOWN EXPORT IN THE HEADER */}
+                  
+                  {/* NEW OUTLINE BUTTON */}
+                  <button onClick={() => setIsOutlineOpen(true)} type="button" className="text-[10px] font-black tracking-widest uppercase bg-slate-500/10 text-slate-400 border border-slate-500/30 px-4 py-2 rounded-lg hover:bg-slate-500/20 hover:text-white transition-all">
+                    ☰ Outline
+                  </button>
+
+                  {/* MARKDOWN EXPORT */}
                   <button onClick={handleExportMarkdown} type="button" className="text-[10px] font-black tracking-widest uppercase bg-blue-500/10 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-lg hover:bg-blue-500/20 transition-all shadow-[0_0_15px_rgba(59,130,246,0.2)]">
                     Markdown ↓
                   </button>
@@ -1010,40 +1025,6 @@ export default function IntelligenceEditor() {
           </form>
         </div>
 
-        {/* SIDEBAR: AUTO-GENERATING TABLE OF CONTENTS */}
-        {!zenMode && (
-          <aside className="w-full xl:w-72 hidden xl:block pt-32">
-            <div className="sticky top-[100px] bg-[#050505] border border-white/10 rounded-2xl p-6 shadow-2xl max-h-[80vh] overflow-y-auto custom-scrollbar">
-              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                Document Outline
-              </h3>
-              
-              {tocItems.length === 0 ? (
-                <p className="text-xs text-slate-600 font-mono italic">Start typing headings (H1, H2, H3) to generate the outline...</p>
-              ) : (
-                <ul className="space-y-3">
-                  {tocItems.map((item, idx) => (
-                    <li key={idx} style={{ paddingLeft: `${(item.level - 1) * 12}px` }}>
-                      <button 
-                        onClick={() => {
-                          if (item.id) {
-                            const element = document.getElementById(item.id);
-                            if (element) element.scrollIntoView({ behavior: 'smooth' });
-                          }
-                        }}
-                        className="text-xs text-slate-400 hover:text-blue-400 transition-colors text-left text-balance"
-                      >
-                        {item.text}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </aside>
-        )}
-
       </div>
 
       {/* MISSING FAB RESTORED HERE: ALWAYS VISIBLE OUTSIDE ZEN MODE */}
@@ -1056,7 +1037,7 @@ export default function IntelligenceEditor() {
         </button>
       )}
 
-      {/* COMMAND DRAWER */}
+      {/* COMMAND DRAWER (RIGHT SIDE) */}
       {!zenMode && (
         <div className={`fixed top-0 right-0 h-full w-full md:w-[450px] bg-[#020202] border-l border-white/10 shadow-2xl z-50 transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col ${isDrawerOpen ? 'translate-x-0' : 'translate-x-full'}`}>
           <div className="p-6 border-b border-white/10 flex items-center justify-between bg-black/40 backdrop-blur-xl">
@@ -1104,13 +1085,52 @@ export default function IntelligenceEditor() {
             <SEOAnalyzer title={title} excerpt={excerpt} content={content} slug={slug} />
           </div>
           <div className="p-6 border-t border-white/10 bg-black/80 flex flex-col gap-4">
-            <button type="submit" form="publish-form" name="action" value="draft" disabled={isPublishing} className="w-full rounded-xl bg-transparent border border-white/20 text-slate-300 font-bold px-10 py-4 text-xs uppercase tracking-[0.2em] hover:bg-white/5 transition-all disabled:opacity-50">
+            <button type="submit" form="publish-form" onClick={() => setPublishAction("DRAFT")} disabled={isPublishing} className="w-full rounded-xl bg-transparent border border-white/20 text-slate-300 font-bold px-10 py-4 text-xs uppercase tracking-[0.2em] hover:bg-white/5 transition-all disabled:opacity-50">
               {isPublishing ? "Processing..." : "Save to Vault (Draft)"}
             </button>
-            <button type="submit" form="publish-form" name="action" value="publish" disabled={isPublishing} className="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black px-10 py-4 text-xs uppercase tracking-[0.2em] transition-all shadow-[0_0_20px_rgba(0,102,255,0.3)] hover:shadow-[0_0_30px_rgba(0,102,255,0.5)] disabled:opacity-50">
+            <button type="submit" form="publish-form" onClick={() => setPublishAction("PUBLISHED")} disabled={isPublishing} className="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black px-10 py-4 text-xs uppercase tracking-[0.2em] transition-all shadow-[0_0_20px_rgba(0,102,255,0.3)] hover:shadow-[0_0_30px_rgba(0,102,255,0.5)] disabled:opacity-50">
               <span className="relative z-10">{isPublishing ? "Deploying..." : "Execute Deployment"}</span>
               <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-in-out"></div>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* NEW: OUTLINE DRAWER (LEFT SIDE) */}
+      {!zenMode && (
+        <div className={`fixed top-0 left-0 h-full w-full md:w-[350px] bg-[#020202] border-r border-white/10 shadow-2xl z-[60] transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col ${isOutlineOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <div className="p-6 border-b border-white/10 flex items-center justify-between bg-black/40 backdrop-blur-xl">
+            <h2 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+              Document Outline
+            </h2>
+            <button type="button" onClick={() => setIsOutlineOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors">✕</button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+            {tocItems.length === 0 ? (
+              <p className="text-xs text-slate-600 font-mono italic">Start typing headings (H1, H2, H3) to generate the outline...</p>
+            ) : (
+              <ul className="space-y-4">
+                {tocItems.map((item, idx) => (
+                  <li key={idx} style={{ paddingLeft: `${(item.level - 1) * 16}px` }}>
+                    <button 
+                      onClick={() => {
+                        if (item.id) {
+                          const element = document.getElementById(item.id);
+                          if (element) {
+                            element.scrollIntoView({ behavior: 'smooth' });
+                            setIsOutlineOpen(false); 
+                          }
+                        }
+                      }}
+                      className="text-sm text-slate-400 hover:text-blue-400 transition-colors text-left text-balance font-medium leading-relaxed"
+                    >
+                      {item.text}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       )}

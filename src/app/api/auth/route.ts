@@ -17,7 +17,9 @@ export async function POST(request: Request) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 60 * 24 * 7, // 1 Week Session
+        // FIX: 'maxAge' is intentionally removed here. 
+        // This forces the browser to treat it as a temporary Session Cookie.
+        // It will automatically self-destruct when the browser is closed.
       });
 
       return NextResponse.json({ success: true });

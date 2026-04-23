@@ -11,7 +11,6 @@ export async function publishArticle(formData: FormData) {
   const image = formData.get("image") as string;
   const status = (formData.get("status") as string) || "PUBLISHED";
 
-  // --- NEW: TAXONOMY & VISIBILITY EXTRACTION ---
   const category = (formData.get("category") as string) || "Uncategorized";
   const visibility = (formData.get("visibility") as string) || "PUBLIC";
   
@@ -29,6 +28,9 @@ export async function publishArticle(formData: FormData) {
     return { success: false, message: "Critical fields missing. Payload rejected." };
   }
 
+  // Generate a safe slug specifically for the Category
+  const categorySlug = category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
   try {
     // 2. Secure Database Injection
     await db.post.create({
@@ -37,12 +39,35 @@ export async function publishArticle(formData: FormData) {
         slug: slug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
         excerpt: excerpt?.trim() || "",
         content: content.trim(),
-        image: image || null,
+        imageUrl: image || null,
         status: status,
-        category: category,
-        tags: tags,
         visibility: visibility,
         publishedAt: publishedAt,
+        
+        // Relational Mapping: Category
+        category: {
+          connectOrCreate: {
+            where: { name: category },
+            create: { 
+              name: category,
+              slug: categorySlug 
+            }
+          }
+        },
+        
+        // ELITE FIX: Relational Mapping for Multiple Tags
+        tags: {
+          connectOrCreate: tags.map((tagName: string) => {
+            const tagSlug = tagName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            return {
+              where: { name: tagName },
+              create: { 
+                name: tagName, 
+                slug: tagSlug 
+              }
+            };
+          })
+        },
       },
     });
 
@@ -58,9 +83,15 @@ export async function publishArticle(formData: FormData) {
 
   } catch (error: any) {
     console.error("PUBLISHING_FAILURE:", error);
+    
+    // Catch Duplicate Slugs Instantly
     if (error.code === 'P2002') {
       return { success: false, message: "CRITICAL: URL Slug already exists. Choose a unique path." };
     }
-    return { success: false, message: "System failure during deployment." };
+
+    // ELITE DEBUGGING
+    const exactError = error.message ? error.message.split('\n').pop() : "Unknown system failure";
+    
+    return { success: false, message: `DB Schema Error: ${exactError}` };
   }
 }
